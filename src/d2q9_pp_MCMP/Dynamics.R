@@ -54,6 +54,7 @@ AddSetting(name="Density", comment='higher density fluid - multiphase capable', 
 AddSetting(name="Density_dry", comment='lower density fluid  - ideal gas assumption' , zonal=T)
 # MultiComponent Settings:
 AddSetting(name="Gc", comment='fluid1/2-fluid2/1 interation')
+AddSetting(name="Gf", default=0.0, comment='fluid1/1 interaction')
 AddSetting(name="Gad1", comment='fluid1-wall interation')
 AddSetting(name="Gad2", comment='fluid2-wall interation')
 # MultiPhase Settings:
@@ -61,6 +62,8 @@ AddSetting(name="R", default=1.0, comment='EoS gas const')
 AddSetting(name="T", default=1.0, comment='EoS reduced temp')
 AddSetting(name="a", default=1.0, comment='EoS a')
 AddSetting(name="b", default=4.0, comment='EoS b')
+AddSetting(name="beta",default=1.0, comment='beta forcing scheme')
+AddSetting(name="kappa",default=1.0, comment='pressure altering term')
 # Turbulence Settings:
 AddSetting(name="Smag", comment='Smagorinsky constant')
 AddSetting(name="SL_U", comment='Shear Layer velocity')

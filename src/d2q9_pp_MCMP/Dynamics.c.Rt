@@ -7,7 +7,11 @@
 // Code to be updated to:
 /*   High density ratio lattice Boltzmann method simulations of multicomponent
  *   multiphase transport of H2O in air - Stiles and Xue (2016) */
- 
+// Edits:
+//	4/07/2016 - altered interparticle potential functions and getFf()
+// function
+//	5/07/2016 - removed reference of math.h library (not allowed)
+
 <?R
 #region R code Preamble
 	source("conf.R") 
@@ -114,7 +118,7 @@ print_ccode(numy/denxy, assign_to=u[1])
 		return u;
 }
 CudaDeviceFunction real_t EoS_CS(){
-	// TO DO: link to getFf() function
+	// TO DO: link to psi_f() function
 	real_t d = <?R C(sum(f)) ?>;
 	real_t p;
 	real_t Tc=0.0943;
@@ -127,28 +131,45 @@ CudaDeviceFunction real_t EoS_CS(){
 CudaDeviceFunction vector_t getFf(){
 	vector_t Force;
 	real_t tempx, tempy, R[9];
+	real_t F_fgx, F_fgy;
 	Force.x = 0.0;
 	Force.y = 0.0;
 	Force.z = 0.0;
-	//Force from fluid g:
 <?python
+# Force due to fluid f from fluid g
 print_ccode(psi_f[0],assign_to=R[0])
 for i in range(1,9):
 	print_ccode(psi_g[i], assign_to=R[i])
 Force = var(['Force.x', 'Force.y'])
-temp1 = 0.0
-temp2 = 0.0
+F_fg  = var(['F_fgx'  , 'F_fgy'])
+F_fgx = 0
+F_fgy = 0
 for i in range(1,9):
-	temp1 += w[i]*cx[i]*R[i]
-	temp2 += w[i]*cy[i]*R[i]
-temp1 =-G * R[0] * temp1
-temp2 =-G * R[0] * temp2
-print_ccode(temp1, assign_to=Force[0])
-print_ccode(temp2, assign_to=Force[1])
+	F_fgx += w[i]*cx[i]*R[i]
+	F_fgy += w[i]*cy[i]*R[i]
+F_fgx =-G * R[0] * F_fgx
+F_fgy =-G * R[0] * F_fgy
+print_ccode(F_fgx, assign_to=F_fg[0])
+print_ccode(F_fgy, assign_to=F_fg[1])
+# Force due to fluid f being non-ideal
+for i in range(1,9):
+	print_ccode(psi_f[i], assign_to=R[i])
+beta = var('beta')
+Gf   = var('Gf')
+F_fx_temp1 = 0
+F_fx_temp2 = 0
+F_fy_temp1 = 0
+F_fy_temp2 = 0
+for i in range(1,9):
+	F_fx_temp1 += w[i]*cx[i]*R[i]
+	F_fy_temp1 += w[i]*cy[i]*R[i]
+	F_fx_temp2 += w[i]*cx[i]*R[i]*R[i]
+	F_fy_temp2 += w[i]*cy[i]*R[i]*R[i]
+F_ffx = -beta*Gf*R[0]*F_fx_temp1 - (1-beta)*Gf*F_fx_temp2/2
+F_ffy = -beta*Gf*R[0]*F_fy_temp1 - (1-beta)*Gf*F_fy_temp2/2
+print_ccode(F_fg[0]+F_ffx, assign_to=Force[0])
+print_ccode(F_fg[1]+F_ffy, assign_to=Force[1])
 ?>
-	//TO DO: Force due to f being non-ideal
-	
-	
 	Force.x = Force.x + GravitationX;
 	Force.y = Force.y + GravitationY;
 	return Force;
@@ -190,8 +211,8 @@ CudaDeviceFunction void CalcPsi_f(){
 	// TO DO: As per Stiles and Xue (2016)
 	real_t d = <?R C(sum(f)) ?> ;
 	real_t p = EoS_CS();
-	psi_f = d;
-	//psi_f = math.sqrt( math.abs((2.0*(p-d/3.0)) / (6.0) ) );
+	//psi_f = d;
+	psi_f =pow(  ( abs(2.0*(kappa*p-d/3.0) / 6.0 )), 0.5) ;
 	if (NodeType & NODE_Wall)
 	{
 		// For application of cohesion force
@@ -201,8 +222,8 @@ CudaDeviceFunction void CalcPsi_f(){
 CudaDeviceFunction void CalcPsi_g(){
 	//Assume the gas is ideal
 	real_t d = <?R C(sum(g)) ?> ;
-	psi_g = d;
-	//psi_g = 1.0*(1.0-exp(-d/1.0)); //assume rho_0=1 as per Stiles & Xue (2016)
+	//psi_g = d;
+	psi_g = 1.0*(1.0-exp(-d/1.0)); //rho_0=1.0 as per Stiles & Xue (2016)
 	if (NodeType & NODE_Wall)
 	{
 		// For application of cohesion force

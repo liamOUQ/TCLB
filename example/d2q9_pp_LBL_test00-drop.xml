@@ -1,36 +1,48 @@
 <?xml version="1.0"?>
-<CLBConfig version="2.0" output="output/">
-        <Geometry nx="150" ny="150" predef="none" model="MRT">
-		<MRT><Box/></MRT>
+<CLBConfig version="2.0" output="output/Laplace/">
+        <Geometry nx="250" ny="500">
+		<BGK><Box/></BGK>
 		<None name="zdrop">
-            			<!--<Sphere dx="45" nx="60" dy="45" ny="60"/>-->
-            			<Box dx="25" nx="100" dy="25" ny="100"/>
+			<Sphere dx="100" fx="150" dy="0" fy="50"/>
 		</None>
-
-	</Geometry>
+		<!--<Wall mask="ALL">
+			<Box dx="0" fx="2"/>
+			<Box dx="-2"/>
+		</Wall>-->
+		</Geometry>
 	<Model>
 		<Params Velocity="0.0"/>
 		<Params omega="1.0"/>
 		<Params	tempomega="1.0" /><!-- as omega gets defined in R preamble-->
 		<Params
-			Density="0.30711"
-			Density-zdrop="0.021748"
-			GravitationY="0.0"
+			Density="0.35806049988564"
+			Density-zdrop="0.0093056493114"
+			GravitationY="-0.00"
 			GravitationX="0.0" 
-			G = "-1.0"
+			avgDensity="0.27"
+			G = "-5.0"
 			betaforcing="1.0"
 			/>
-		<Params	T="0.075456"/><!--T_critical = 0.09432, rho_critical = 0.11911 -->
+		<Params	T="0.066024"/><!--T_critical = 0.09432, rho_critical = 0.11911 -->
 		<Params	alpha="1" /><!-- increasing alpha increases interface thickness -->
 		<Params	R    ="1" /><!-- no effect on thickness or stability-->
 		<Params	beta ="4" /><!-- effects density, but ratio of densities remains constant-->
 		<Params	kappa="0" />   
+
+		<Params
+			S3="-0.33333333"
+			S7="0"
+			S8="0"
+		/>
 	</Model>
 
 <VTK/>
-<Solve   Iterations="5000" output="output/">
-    <VTK Iterations="100"/>
+<Solve   Iterations="10000">
+<VTK Iterations="5000"/>
+</Solve>
+<Params GravitationY="-0.00000001"/>
+<Solve 	 Iterations="50000">
+	<VTK Iterations="5000"/>
 </Solve>
 
 </CLBConfig>
-			<!--Density-zdrop="0.014500641645077492"  3.2600529440452366"-->
