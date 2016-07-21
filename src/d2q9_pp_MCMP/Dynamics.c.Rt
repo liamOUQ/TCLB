@@ -210,9 +210,9 @@ CudaDeviceFunction real_t getP(){
 CudaDeviceFunction void CalcPsi_f(){
 	// TO DO: As per Stiles and Xue (2016)
 	real_t d = <?R C(sum(f)) ?> ;
-	real_t p = EoS_CS();
-	//psi_f = d;
-	psi_f =pow(  ( abs(2.0*(kappa*p-d/3.0) / 6.0 )), 0.5) ;
+	//real_t p = EoS_CS();
+	psi_f = d;
+	//psi_f =pow(  ( abs(2.0*(kappa*p-d/3.0) / 6.0 )), 0.5) ;
 	if (NodeType & NODE_Wall)
 	{
 		// For application of cohesion force
@@ -222,8 +222,8 @@ CudaDeviceFunction void CalcPsi_f(){
 CudaDeviceFunction void CalcPsi_g(){
 	//Assume the gas is ideal
 	real_t d = <?R C(sum(g)) ?> ;
-	//psi_g = d;
-	psi_g = 1.0*(1.0-exp(-d/1.0)); //rho_0=1.0 as per Stiles & Xue (2016)
+	psi_g = d;
+	//psi_g = 1.0*(1.0-exp(-d/1.0)); //rho_0=1.0 as per Stiles & Xue (2016)
 	if (NodeType & NODE_Wall)
 	{
 		// For application of cohesion force
