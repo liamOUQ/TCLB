@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<CLBConfig version="2.0" output="output/">
+        <Geometry nx="200" ny="200">
+		<BGK><Box/></BGK>
+		<None name="zdrop">
+            	<Sphere dx="50" fx="150" dy="50" fy="150"/>
+		</None>
+	</Geometry>
+	<Model>
+		<Params omega="1"
+			omega_g="1"
+			Density="8.0247709503400940729137253685375"
+			Density-zdrop="0.061785453886205471325318325376901"
+			Density_dry="0.002"
+			Density_dry-zdrop="0.02"
+			DensCutOff_h="4.0"			
+			DensCutOff_g="0.008"
+			/>
+		<Params
+			G11="-1.0"
+			Gw1="0.0"
+			Gw2="0.0"
+			G12="0.008"
+			G21="0.008"
+			G22="-1.0"
+			T="0.7"
+         		a1="0.0408163265"
+			b1="0.0952380952"
+			R1="1.0"
+			a2="0.0408163265"
+			b2="0.0047619026"
+			R2="1.0"
+			omega_PR1="0.3"
+			omega_PR2="0.33"	
+			GravitationX="0.0"
+			GravitationX_g="0.0"
+			buoyancyX="0.0001"
+		/>
+	</Model>
+	<VTK/>
+    <Solve Iterations="20000">
+        <VTK Iterations="100"/>
+	<Log Iterations="200"/>
+    </Solve>
+</CLBConfig>
