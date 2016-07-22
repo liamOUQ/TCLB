@@ -143,12 +143,27 @@ CudaDeviceFunction vector_t getF(){
 	F.z = 0.0;
 	return F;
 }
-CudaDeviceFunction real_t getP(){
-// Carnahan-Starling EoS.
+CudaDeviceFunction real_t EoS_CS(){
 	real_t p0,bp, d;
 	d = f[1]+f[2]+f[3]+f[4]+f[5]+f[6]+f[7]+f[8]+f[0];
 	bp = d*beta/4.0;
 	p0 = d*R*T*(1+bp+bp*bp-bp*bp*bp)/pow(1-bp,3) - alpha*d*d;
+	return p0;
+}
+CudaDeviceFunction real_t EoS_PR(){
+	//default a=2/49,b=2/21, R=1
+        real_t d = <?R C(sum(f)) ?> ;
+        real_t p;
+        real_t Tc=0.0729;
+	real_t b = beta;
+        real_t a = pow(
+        (1.0+0.87323618688*(1-sqrt(T))),2);
+        p = d*R*T*Tc/(1.0-b*d) - a*alpha*d*d/(1.0+2.0*b*d-b*b*d*d);
+        return p;
+}
+CudaDeviceFunction real_t getP(){
+	//return real_t p0=EoS_CS();
+	real_t p0 = EoS_PR();
 	return p0;
 }
 CudaDeviceFunction real_t getPsi(){
