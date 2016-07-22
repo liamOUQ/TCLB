@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<CLBConfig version="2.0" output="output/">
+        <Geometry nx="250" ny="500">
+		<BGK><Box/></BGK>
+	<!--	<None name="zdrop">
+			<Sphere dx="100" fx="150" dy="0" fy="50"/>
+		</None>-->
+		<None name="zdrop">
+			<Sphere dx="50" fx="200" dy="100" fy="250"/>
+		</None>
+		<!--<Wall mask="ALL">
+			<Box dx="0" fx="2"/>
+			<Box dx="-2"/>
+		</Wall>-->
+		</Geometry>
+	<Model>
+		<Params Velocity="0.0"/>
+		<Params omega="1.0"/>
+		<Params	tempomega="1.0" /><!-- as omega gets defined in R preamble-->
+		<!--- Working Set 1:<Params
+			Density="7.6215877365846152680535236015426"
+			Density-zdrop="0.11783887583906363562167"
+			avgDensity="6.56077"-->
+		<Params
+			Density="5.858491327567705749892939"
+			Density-zdrop="0.59883968118688047368952"
+			avgDensity="5.114925612"
+			GravitationY="0.0"
+			GravitationX="0.0" 
+			G = "-1.0"
+			betaforcing="1.0"
+			/>
+<!--- Working Set 1:		<Params	T="0.75"/> -->
+		<Params	T="0.9"/>
+		<Params	alpha="0.0408163265" />
+		<Params	R    ="1.0" />
+		<Params	beta ="0.0952380952" />
+		<Params	kappa="0" />   
+	</Model>
+
+<VTK/>
+<Solve   Iterations="2000">
+<VTK Iterations="100"/>
+</Solve>
+<!--- Working Set 1:<Params GravitationY="-0.00000001"/>-->
+<Params GravitationY="-0.000001"/>
+<Solve 	 Iterations="20000">
+	<VTK Iterations="1000"/>
+</Solve>
+
+</CLBConfig>
