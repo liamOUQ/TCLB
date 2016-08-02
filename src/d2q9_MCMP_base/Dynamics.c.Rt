@@ -1,13 +1,17 @@
-// 18/7/2016 - Model Developed: Jie Bao and Laura Schaefer
-// """"Lattice Boltzmann equation model for multi-component multi-phase
-//     flow with high density ratios""""
-// e.g. files start with d2q9_MCMP
+// 25/5/2016 - Model Developed based on Chp 3 of:
+// """"Multiphase Lattice Boltzmann methods: Theory and Application""""
+// Chp 3: Shan and Chen-type multi-component multiphase models
+// i.e. MCMP_base = multicomponent multiphase_base Shan-Chen model
+// e.g. files start with d2q9_pp_MCMP
 // Maintainer: Travis-Mitchell @TravisMitchell
 
-// Code updates:
-//		18/7/16 - Weighting of c0 parameter altered such that weights
-//				  are equivalent of lattice weights (seems to be more
-//				  stable).
+// Code to be updated to:
+/*   High density ratio lattice Boltzmann method simulations of multicomponent
+ *   multiphase transport of H2O in air - Stiles and Xue (2016) */
+// Edits:
+//	4/07/2016 - altered interparticle potential functions and getFf()
+// function
+//	5/07/2016 - removed reference of math.h library (not allowed)
 
 <?R
 #region R code Preamble
@@ -57,7 +61,7 @@
 #region python preamble
 from sympy import *
 from sympy.printing import print_ccode
-G = var(['G11','G12','G21','G22'])
+G = var('Gc')
 ueq_f = var(['ueq_f.x', 'ueq_f.y'])
 ueq_g = var(['ueq_g.x', 'ueq_g.y'])
 rho = var(['rf', 'rg'])
@@ -91,54 +95,32 @@ CudaDeviceFunction real_t getRhog(){
 CudaDeviceFunction real_t getRho(){
 	return <?R C(sum(f)+sum(g)) ?> ;
 }  
-
 CudaDeviceFunction vector_t getU(){
-	real_t rf = <?R C(sum(f)) ?>;
-	vector_t u;
-	vector_t F = getFf();
-	u.x = ((f[1] - f[3] + f[5] - f[6] - f[7] + f[8]) + F.x*0.5)/rf;
-	u.y = ((f[2] - f[4] + f[5] + f[6] - f[7] - f[8]) + F.y*0.5)/rf;
-	u.z = 0.0;
-		return u;
-}
-CudaDeviceFunction vector_t getUg(){
-	real_t rg = <?R C(sum(g)) ?>;
-	vector_t u;
-	vector_t F = getFg();
-	u.x = ((g[1] - g[3] + g[5] - g[6] - g[7] + g[8]) + F.x*0.5)/rg;
-	u.y = ((g[2] - g[4] + g[5] + g[6] - g[7] - g[8]) + F.y*0.5)/rg;
-	u.z = 0.0;
-		return u;
-}
-CudaDeviceFunction vector_t getUc(){
 	// Common velocity
 	real_t rf = <?R C(sum(f)) ?>;
 	real_t rg = <?R C(sum(g)) ?>;
-	vector_t u;
+	vector_t u,uf,ug;
 <?python
-numx = 0.0   #numerator for x direction
-denxy = 0.0  #denominator for x,y direction
-numy = 0.0   #numerator for y direction
+numx = 0.0
+denxy = 0.0
+numy = 0.0
 for i in range(2):
-	denxy += rho[i]*om[i]
+	denxy += rho[i]/om[i]
 	for j in range(9):
 		ind = i*9+j
-		numx += Densities[ind] * cx[j] * om[i]
-		numy += Densities[ind] * cy[j] * om[i]
+		numx += Densities[ind] * cx[j] / om[i]
+		numy += Densities[ind] * cy[j] / om[i]
+
 print_ccode(numx/denxy, assign_to=u[0])
 print_ccode(numy/denxy, assign_to=u[1])
-?>	
+?>
+	
 	u.z = 0.0;
 		return u;
 }
-CudaDeviceFunction real_t getP(){
-	//TO DO: this will need to be updated when EoS implemented
-		real_t rf  = <?R C(sum(f))?>;
-		real_t rg  = <?R C(sum(g))?>;
-		return EoS_PR(rf,a1,b1,R1,omega_PR1)+EoS_PR(rg,a2,b2,R2,omega_PR2);
-}
-
-/*CudaDeviceFunction real_t EoS_CS(real_t d){
+CudaDeviceFunction real_t EoS_CS(){
+	// TO DO: link to psi_f() function
+	real_t d = <?R C(sum(f)) ?>;
 	real_t p;
 	real_t Tc=0.0943;
 	real_t temp_bp = b*d/4.0;
@@ -146,92 +128,120 @@ CudaDeviceFunction real_t getP(){
 	p = p/((1-temp_bp)*(1-temp_bp)*(1-temp_bp));
 	p = p - a*d*d;
 	return p;
-}*/
-CudaDeviceFunction real_t EoS_PR(real_t d,real_t a,real_t b,real_t R,real_t omega_PR){
-	real_t p;
-	real_t Tc=0.0729220041;//a/(b*R*5.877120823);
-	real_t alpha = pow( (1.0+(0.37464+1.54226*omega_PR-0.26992*omega_PR*omega_PR)*(1-sqrt(T))) ,2);
-
-	p = d*R*T*Tc/(1.0-b*d) - a*alpha*d*d/(1.0+2.0*b*d-b*b*d*d);
-	return p;
 }
-
 CudaDeviceFunction vector_t getFf(){
 	vector_t Force;
-	real_t d = <?R C(sum(f)) ?> ;
-	real_t F_fgx, F_fgy, F_ffx, F_ffy, F_wx, F_wy;
-//TO DO: Add in surface tension control:	real_t F_sx, F_sy;
+	real_t tempx, tempy, R[9];
+	real_t F_fgx, F_fgy;
 	Force.x = 0.0;
 	Force.y = 0.0;
 	Force.z = 0.0;
-	
-	real_t c0 = 1.0/3.0, c1 = 1.0/3.0, c2 = 1.0/12.0;
-	
-	F_ffx = -c0 * psi_f(0,0) * G11 * (c1*(psi_f(1,0)-psi_f(-1,0)) + c2*(psi_f(1,1)-psi_f(-1,1)+psi_f(1,-1)-psi_f(-1,-1)));
-	F_ffy = -c0 * psi_f(0,0) * G11 * (c1*(psi_f(0,1)-psi_f(0,-1)) + c2*(psi_f(1,1)+psi_f(-1,1)-psi_f(1,-1)-psi_f(-1,-1)));
-	
-	F_fgx = -c0 * psi_f(0,0) * G12 * (c1*(psi_g(1,0)-psi_g(-1,0)) + c2*(psi_g(1,1)-psi_g(-1,1)+psi_g(1,-1)-psi_g(-1,-1)));
-	F_fgy = -c0 * psi_f(0,0) * G12 * (c1*(psi_g(0,1)-psi_g(0,-1)) + c2*(psi_g(1,1)+psi_g(-1,1)-psi_g(1,-1)-psi_g(-1,-1)));
-
-	F_wx = -d * Gw1 * (rho_w(1,0) - rho_w(-1,0) + rho_w(1,1) - rho_w(-1,1) - rho_w(-1,-1) + rho_w(1,-1));
-	F_wy = -d * Gw1 * (rho_w(0,1) - rho_w(0,-1) + rho_w(1,1) + rho_w(-1,1) - rho_w(-1,-1) + rho_w(1,-1));
-	
-/*	F_sx = 
-	F_sy = */
-
-	Force.x = F_ffx + F_fgx + F_wx + d*GravitationX;
-	Force.y = F_ffy + F_fgy + F_wy + d*GravitationY;
-	
+<?python
+# Force due to fluid f from fluid g
+print_ccode(psi_f[0],assign_to=R[0])
+for i in range(1,9):
+	print_ccode(psi_g[i], assign_to=R[i])
+Force = var(['Force.x', 'Force.y'])
+F_fg  = var(['F_fgx'  , 'F_fgy'])
+F_fgx = 0
+F_fgy = 0
+for i in range(1,9):
+	F_fgx += w[i]*cx[i]*R[i]
+	F_fgy += w[i]*cy[i]*R[i]
+F_fgx =-G * R[0] * F_fgx
+F_fgy =-G * R[0] * F_fgy
+print_ccode(F_fgx, assign_to=F_fg[0])
+print_ccode(F_fgy, assign_to=F_fg[1])
+# Force due to fluid f being non-ideal
+for i in range(1,9):
+	print_ccode(psi_f[i], assign_to=R[i])
+beta = var('beta')
+Gf   = var('Gf')
+F_fx_temp1 = 0
+F_fx_temp2 = 0
+F_fy_temp1 = 0
+F_fy_temp2 = 0
+for i in range(1,9):
+	F_fx_temp1 += w[i]*cx[i]*R[i]
+	F_fy_temp1 += w[i]*cy[i]*R[i]
+	F_fx_temp2 += w[i]*cx[i]*R[i]*R[i]
+	F_fy_temp2 += w[i]*cy[i]*R[i]*R[i]
+F_ffx = -beta*Gf*R[0]*F_fx_temp1 - (1-beta)*Gf*F_fx_temp2/2
+F_ffy = -beta*Gf*R[0]*F_fy_temp1 - (1-beta)*Gf*F_fy_temp2/2
+print_ccode(F_fg[0]+F_ffx, assign_to=Force[0])
+print_ccode(F_fg[1]+F_ffy, assign_to=Force[1])
+?>
+	Force.x = Force.x + GravitationX;
+	Force.y = Force.y + GravitationY;
 	return Force;
 }
 CudaDeviceFunction vector_t getFg(){
 	vector_t Force;
-	real_t d = <?R C(sum(g)) ?> ;
-	real_t F_gfx, F_gfy, F_ggx, F_ggy, F_wx, F_wy;
+	real_t tempx, tempy, R[9];
 	Force.x = 0.0;
 	Force.y = 0.0;
 	Force.z = 0.0;
-	
-	real_t c0 = 1.0/3.0, c1 = 1.0/3.0, c2 = 1.0/12.0;
-	
-	F_ggx = -c0 * psi_g(0,0) * G22 * (c1*(psi_g(1,0)-psi_g(-1,0)) + c2*(psi_g(1,1)-psi_g(-1,1)+psi_g(1,-1)-psi_g(-1,-1)));
-	F_ggy = -c0 * psi_g(0,0) * G22 * (c1*(psi_g(0,1)-psi_g(0,-1)) + c2*(psi_g(1,1)+psi_g(-1,1)-psi_g(1,-1)-psi_g(-1,-1)));
-	
-	F_gfx = -c0 * psi_g(0,0) * G21 * (c1*(psi_f(1,0)-psi_f(-1,0)) + c2*(psi_f(1,1)-psi_f(-1,1)+psi_f(1,-1)-psi_f(-1,-1)));
-	F_gfy = -c0 * psi_g(0,0) * G21 * (c1*(psi_f(0,1)-psi_f(0,-1)) + c2*(psi_f(1,1)+psi_f(-1,1)-psi_f(1,-1)-psi_f(-1,-1)));
-
-	F_wx = -d * Gw2 * (rho_w(1,0) - rho_w(-1,0) + rho_w(1,1) - rho_w(-1,1) - rho_w(-1,-1) + rho_w(1,-1));
-	F_wy = -d * Gw2 * (rho_w(0,1) - rho_w(0,-1) + rho_w(1,1) + rho_w(-1,1) - rho_w(-1,-1) + rho_w(1,-1));
-	
-	Force.x = F_ggx + F_gfx + F_wx + d*GravitationX_g;
-	Force.y = F_ggy + F_gfy + F_wy + d*GravitationY_g;
-	
+<?python
+print_ccode(psi_g[0],assign_to=R[0])
+for i in range(1,9):
+	print_ccode(psi_f[i], assign_to=R[i])
+Force = var(['Force.x', 'Force.y'])
+temp1 = 0.0
+temp2 = 0.0
+for i in range(1,9):
+	temp1 += w[i]*cx[i]*R[i]
+	temp2 += w[i]*cy[i]*R[i]
+temp1 =-G * R[0] * temp1
+temp2 =-G * R[0] * temp2
+print_ccode(temp1, assign_to=Force[0])
+print_ccode(temp2, assign_to=Force[1])
+?>
+	Force.x = Force.x + GravitationX;
+	Force.y = Force.y + GravitationY;
 	return Force;
 }
+CudaDeviceFunction real_t getP(){
+	//TO DO: this will need to be updated when EoS implemented
+		real_t rf  = <?R C(sum(f))?>;
+		real_t rg  = <?R C(sum(g))?>;
+		real_t rho = rf+rg;
+		return rho/3.0 + Gc * psi_g * psi_f/3.0;
+}
+
 CudaDeviceFunction void CalcPsi_f(){
+	// TO DO: As per Stiles and Xue (2016)
 	real_t d = <?R C(sum(f)) ?> ;
-	real_t p = EoS_PR(d, a1, b1, R1, omega_PR1 );
-	real_t c0 = G11/3.0; 
-	psi_f = sqrt( fabs(2.0*(p-d/3.0) / c0 )) ;
+	//real_t p = EoS_CS();
+	psi_f = d;
+	//psi_f =pow(  ( abs(2.0*(kappa*p-d/3.0) / 6.0 )), 0.5) ;
 	if (NodeType & NODE_Wall)
 	{
-		psi_f = 0.0;
+		// For application of cohesion force
+		psi_f = Gad2/Gc;
 	}
-	//printf("Density2 %f, pressure %f, Value of psi %f, c0 %f\n", d, p, psi_f, c0);
 }
 CudaDeviceFunction void CalcPsi_g(){
+	//Assume the gas is ideal
 	real_t d = <?R C(sum(g)) ?> ;
-	real_t p = EoS_PR(d, a2, b2, R2, omega_PR2 );
-	real_t c0 = G22/3.0; 
-	psi_g = sqrt( fabs(2.0*(p-d/3.0) / c0 )) ;
+	psi_g = d;
+	//psi_g = 1.0*(1.0-exp(-d/1.0)); //rho_0=1.0 as per Stiles & Xue (2016)
 	if (NodeType & NODE_Wall)
 	{
-		psi_g = 0.0;
+		// For application of cohesion force
+		psi_g = Gad1/Gc;
 	}
 }
 
-CudaDeviceFunction real_t getPsi_f(){
-	return psi_f(0,0);
+CudaDeviceFunction float2 Color() {
+        float2 ret;
+        vector_t u = getU();
+        ret.x = sqrt(u.x*u.x + u.y*u.y);
+        if (NodeType == NODE_Solid){
+                ret.y = 0;
+        } else {
+                ret.y = 1;
+        }
+        return ret;
 }
 
 CudaDeviceFunction void SetEquilibrumf(real_t rho, real_t Jx, real_t Jy){
@@ -285,18 +295,18 @@ CudaDeviceFunction void Init() {
 	if (NodeType & NODE_Wall){
 		SetEquilibrumf(0,0,0);
 		SetEquilibrumg(0,0,0);
-		rho_w = 1.0;
 	}
 	else {
-		rho_w = 0.0;
-		SetEquilibrumf(
-			rho_f,
-			ux_f*rho_f,
-			uy_f*rho_f		);
-		SetEquilibrumg(
-			rho_g,
-			ux_g*rho_g,
-			uy_g*rho_g		);
+	SetEquilibrumf(
+		rho_f,
+		ux_f*rho_f,
+		uy_f*rho_f
+	);
+	SetEquilibrumg(
+		rho_g,
+		ux_g*rho_g,
+		uy_g*rho_g
+		);
 	}
 }
 
@@ -321,49 +331,36 @@ CudaDeviceFunction void Run() {
     }
     if (NodeType & NODE_BGK)
     {
+		//MRT operator has not been updated to correctly include
+		//multi-component force (on TO-DO list)
 		CollisionBGK();
     }
 }
 
-CudaDeviceFunction void CollisionBGK(){
+CudaDeviceFunction void CollisionBGK()
+{
+	real_t uf;
 	real_t rg = <?R C(sum(g)) ?>;
 	real_t rf = <?R C(sum(f)) ?>;
-	//vector_t u_common  = getU();
+	vector_t u_common  = getU();
 	vector_t Force_f = getFf();
 	vector_t Force_g = getFg();
-	//vector_t ueq_f = getUc();
-	//vector_t ueq_g = getUc();
-	vector_t ueq_f, ueq_g;
+	vector_t ueq_f;
+	vector_t ueq_g;
 	ueq_f.z = 0.0;
 	ueq_g.z = 0.0;
-	
-	//For Buoyancy in the liquid pop
-	if (rf < DensCutOff_h)
-	{ Force_f.x += buoyancyX * rf;
-	  Force_f.y += buoyancyY * rf;	
-	}
-	if (rg > DensCutOff_g)
-	{ Force_g.x += buoyancyX * rg;
-	  Force_g.y += buoyancyY * rf;
-	}
-	if (rf > 0.0){
-		//ueq_f.x += Force_f.x/(omega*rf);
-		//ueq_f.y += Force_f.y/(omega*rf);
-		ueq_f.x = (f[1]-f[3]+f[5]-f[6]-f[7]+f[8])/rf + Force_f.x/(omega*rf);  //u_common.x + Force_f.x/(omega * rf);
-		ueq_f.y = (f[2]-f[4]+f[5]+f[6]-f[7]-f[8])/rf + Force_f.y/(omega*rf);	} //u_common.y + Force_f.y/(omega * rf);}
+	if (rf > 0.0001){
+		ueq_f.x = u_common.x + Force_f.x/(omega * rf);
+		ueq_f.y = u_common.y + Force_f.y/(omega * rf);}
 	else {
-		ueq_f.x = 0.0;  //u_common.x;
-		ueq_f.y = 0.0; //u_common.y;
-		}
-	if (rg > 0.0){
-		//ueq_g.x += Force_g.x/(omega_g*rg);
-		//ueq_g.y += Force_g.y/(omega_g*rg);
-		ueq_g.x = (g[1]-g[3]+g[5]-g[6]-g[7]+g[8])/rg + Force_g.x/(omega_g*rg) ; //u_common.x + Force_g.x/(omega_g * rg);
-		ueq_g.y = (g[2]-g[4]+g[5]+g[6]-g[7]-g[8])/rg + Force_g.y/(omega_g*rg) ; }//u_common.y + Force_g.y/(omega_g * rg);}
+		ueq_f.x = u_common.x;
+		ueq_f.y = u_common.y;}
+	if (rg > 0.0001){
+		ueq_g.x = u_common.x + Force_g.x/(omega_g * rg);
+		ueq_g.y = u_common.y + Force_g.y/(omega_g * rg);}
 	else{
-		ueq_g.x = 0.0;
-		ueq_g.y = 0.0;
-		}
+		ueq_g.x = u_common.x;
+		ueq_g.y = u_common.y;}
 	
 <?python
 for i in range(9):
@@ -437,9 +434,8 @@ CudaDeviceFunction void EPressure()
 ?>
 }
 
-
-
-CudaDeviceFunction void CollisionMRT(){
+CudaDeviceFunction void CollisionMRT()
+{
 	vector_t u = getU();
 <?R
 #region first population
@@ -569,18 +565,9 @@ CudaDeviceFunction void CollisionMRT(){
 ?>
  
 }
-CudaDeviceFunction float2 Color() {
-        float2 ret;
-        vector_t u = getU();
-        ret.x = sqrt(u.x*u.x + u.y*u.y);
-        if (NodeType == NODE_Solid){
-                ret.y = 0;
-        } else {
-                ret.y = 1;
-        }
-        return ret;
-}
-CudaDeviceFunction vector_t getA(){
+
+CudaDeviceFunction vector_t getA()
+{
 	real_t <?R C(R,sep=",") ?>;
 	vector_t ret;
 <?R
