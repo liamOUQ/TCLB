@@ -336,7 +336,7 @@ CudaDeviceFunction void CollisionBGK()
 		ueq_f.y = u_common.y;
 		ueq_f.z = u_common.z;}
 	if (rg > 0.0001){
-		ueq_g.x = u_common.x + Force_g.x/(omega_g * rg);
+		ueq_g.x = u_common.x + Force_g.x/(omega_g * rg) + GravitationX/(omega_g * rg);
 		ueq_g.y = u_common.y + Force_g.y/(omega_g * rg);
 		ueq_g.z = u_common.z + Force_g.z/(omega_g * rg);}
 	else{

@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<CLBConfig version="2.0" output="output/">
+        <Geometry nx="512" ny="48" nz="48">
+		<BGK><Box/></BGK>
+		<None name="zdrop">
+			<SolidXPipe x="10" nx="48" y="24" z="24" R="18" /> 
+		</None>			
+		<!--<WVelocity name="inlet">
+			<Box nx="1" dx="10"/>
+		</WVelocity>
+		<EPressure name="outlet">
+			<Box nx="1" dx="-10"/>
+		</EPressure>-->
+		<Wall mask="ALL">
+			<Pipe dy="1" fy="-2" dz="1" fz="-2"/>
+			<SolidXPipe x="152" nx="360" y="24" z="24" R="10"/>
+		</Wall>
+	</Geometry>
+	<Model>
+		<Params omega="1"	omega_g="1"
+				Density="2.0" 		Density-zdrop="0.06"
+				Density_dry="0.06" 	Density_dry-zdrop="2.0" />
+		<!--<Params
+				Velocity_f-inlet="0.05"	Velocity_g-inlet="0.05"
+				Density-inlet="2.0"  	Density_dry-inlet="0.06"
+				Density-outlet="0.06"	Density_dry-outlet="2.0"
+				/>-->
+		<Params
+				GravitationX="1e-3"
+				G12="0.9" G21="0.9"
+				Gad1="0.3"	Gad2="-0.3"
+         />
+	</Model>
+	<VTK/>
+	<VTK Iterations="200"/>
+	<Solve Iterations="5000"/>
+</CLBConfig>

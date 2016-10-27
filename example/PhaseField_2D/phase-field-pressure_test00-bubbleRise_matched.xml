@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<CLBConfig version="2.0" output="output/PhaseField_matchedDensity/">
+    <Geometry nx="200" ny="300">
+		<MRT><Box /></MRT>
+     	<None name="disc">
+            <Sphere  ny="50" nx="50" dx="75" dy="75" />
+        </None>
+		<!--<Wall mask="ALL" >
+			<Box ny="2" />
+			<Box dy="-2"/>
+		</Wall>-->
+	</Geometry>
+    <Model>
+		<Params
+				Density_h="1"
+				Density_l="1" 
+				PhaseField_h="1.0"
+				PhaseField_l="0.0" 
+    		
+				PhaseField="1.0"
+       			PhaseField-disc="0.0"
+				/>
+        <Params W="4" 
+        		M="1"
+				sigma="0.00013207425" />
+        <Params nu_l="0.00108096625"
+				nu_h="0.06269604263"
+				S0="1.0"
+				S1="1.0"
+				S2="1.0"
+				S3="1.0"
+				S4="1.0"
+				S5="1.0"
+				S6="1.0"/>
+    </Model>
+<VTK/>
+<Solve Iterations="500" output="output/PhaseField_matchedDensity/">  
+<VTK Iterations="500"/>
+</Solve>
+
+<Params GmatchedY="0.00000612824" />
+<Solve Iterations="20000" output="output/PhaseField_matchedDensity/">  
+<VTK Iterations="1000"/>
+</Solve>
+</CLBConfig>
+
+

@@ -37,7 +37,8 @@
 		/>
 	</Model>
 	<VTK/>
-    <Solve Iterations="10000">
-        <VTK Iterations="500"/>
+    <Solve Iterations="20000">
+        <VTK Iterations="100"/>
+	<Log Iterations="200"/>
     </Solve>
 </CLBConfig>

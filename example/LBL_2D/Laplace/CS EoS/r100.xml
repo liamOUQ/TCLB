@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<CLBConfig version="2.0" output="output/Laplace/">
+        <Geometry nx="250" ny="250">
+		<BGK><Box/></BGK>
+		<None name="zdrop">
+			<Sphere dx="25" fx="225" dy="25" fy="225"/>
+		</None>
+
+	</Geometry>
+	<Model>
+		<Params Velocity="0.0"/>
+		<Params omega="1.0"/>
+		<Params	tempomega="1.0" /><!-- as omega gets defined in R preamble-->
+		<Params
+			Density="0.58393749237806535"
+			Density-zdrop="0.0015090723571863091786"
+			GravitationY="0.0"
+			GravitationX="0.0" 
+			G = "-1.0"
+			betaforcing="1.0"
+			/>
+		<Params	T="0.04716"/><!--T_critical = 0.09432, rho_critical = 0.11911 -->
+		<Params	alpha="0.75" /><!-- increasing alpha increases interface thickness -->
+		<Params	R    ="0.75" /><!-- no effect on thickness or stability-->
+		<Params	beta ="3" /><!-- effects density, but ratio of densities remains constant-->
+		<Params	kappa="0" />   
+	</Model>
+
+<VTK/>
+<Solve   Iterations="40000">
+<VTK Iterations="5000"/>
+</Solve>
+
+</CLBConfig>
