@@ -1,7 +1,3 @@
-# Density - table of variables of LB Node to stream
-#  name - variable name to stream
-#  dx,dy,dz - direction of streaming
-#  comment - additional comment
 #	Pressure Evolution:
 AddDensity( name="f[0]", dx= 0, dy= 0, group="f")
 AddDensity( name="f[1]", dx= 1, dy= 0, group="f")
@@ -22,10 +18,11 @@ AddDensity( name="h[5]", dx= 1, dy= 1, group="h")
 AddDensity( name="h[6]", dx=-1, dy= 1, group="h")
 AddDensity( name="h[7]", dx=-1, dy=-1, group="h")
 AddDensity( name="h[8]", dx= 1, dy=-1, group="h")
-AddField('PhaseF',stencil2d=2, group="phi")
+AddField('PhaseF'   ,stencil2d=1, group="phi")
+AddField('SolidNode',stencil2d=1, group="TypeFlag")
 # Stages - processes to run for initialisation and each iteration
 AddStage("PhaseInit"    , "Init"		      , 
-	save="PhaseF")
+	save=Fields$group=="phi" | Fields$group=="TypeFlag")
 AddStage("BaseInit"     , "Init_distributions", 
 	save=Fields$group=="f" | Fields$group=="h")
 AddStage("calcPhase"	, "calcPhaseF"        , 
@@ -34,24 +31,23 @@ AddStage("calcPhase"	, "calcPhaseF"        ,
 AddStage("BaseIter"     , "Run"			      , 
 	save=Fields$group=="f" | Fields$group=="h", 
 	load=DensityAll$group=="f" | DensityAll$group=="h")
-
+#AddAction("Iteration", c("BaseIter", "calcPhase","WallPhase"))
 AddAction("Iteration", c("BaseIter", "calcPhase"))
 AddAction("Init"     , c("PhaseInit", "BaseInit","calcPhase"))
-
 # 	Outputs:
-AddQuantity(name="Rho",	  unit="kg/m3")
+AddQuantity(name="Density",	  unit="kg/m3")
 AddQuantity(name="PhaseField",unit="1")
 AddQuantity(name="U",	  unit="m/s",vector=T)
 AddQuantity(name="P",	  unit="Pa")
 AddQuantity(name="Mu",	  unit="1")
 AddQuantity(name="Normal",unit="1/m",vector=T)
 AddQuantity(name="InterfaceForce", unit="N",vector=T)
+AddQuantity(name="Solid",unit="1")
 #	Inputs: For phasefield evolution
 AddSetting(name="Density_h", comment='High density')
 AddSetting(name="Density_l", comment='Low  density')
-AddSetting(name="PhaseField_h", default=1, comment='PhaseField in Liquid')
-AddSetting(name="PhaseField_l", default=0, comment='PhaseField gas')
-AddSetting(name="PhaseField", 	   comment='Initial PhaseField distribution', zonal=T)
+AddSetting(name="PhaseField", 	   comment='Initial PhaseField distribution (0 or 1)', zonal=T)
+AddSetting(name="contactAngle", default=90)
 AddSetting(name="W", default=4,    comment='Anti-diffusivity coeff')
 AddSetting(name="M", default=0.05, comment='Mobility')
 AddSetting(name="sigma", 		   comment='surface tension')
@@ -75,11 +71,8 @@ AddSetting(name="GravitationX", default=0.0, comment='applied (rho)*GravitationX
 AddSetting(name="GravitationY", default=0.0, comment='applied (rho)*GravitationY')
 AddSetting(name="BuoyancyX", default=0.0, comment='applied (rho-rho_h)*BuoyancyX')
 AddSetting(name="BuoyancyY", default=0.0, comment='applied (rho-rho_h)*BuoyancyY')
-AddSetting(name="GmatchedX", default=0.0, comment='applied (1-phi)*GmatchedX')
-AddSetting(name="GmatchedY", default=0.0, comment='applied (1-phi)*GmatchedY')
 # Globals - table of global integrals that can be monitored and optimized
 AddGlobal(name="PressureLoss", comment='pressure loss', unit="1mPa")
 AddGlobal(name="OutletFlux", comment='pressure loss', unit="1m2/s")
 AddGlobal(name="InletFlux", comment='pressure loss', unit="1m2/s")
 AddGlobal(name="TotalDensity", comment='Mass conservation check', unit="1kg/m3")
-
