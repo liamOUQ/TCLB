@@ -22,19 +22,37 @@ AddDensity( name="h[5]", dx= 1, dy= 1, group="h")
 AddDensity( name="h[6]", dx=-1, dy= 1, group="h")
 AddDensity( name="h[7]", dx=-1, dy=-1, group="h")
 AddDensity( name="h[8]", dx= 1, dy=-1, group="h")
+<<<<<<< HEAD
 AddField('PhaseF',stencil2d=2, group="phi")
 # Stages - processes to run for initialisation and each iteration
 AddStage("PhaseInit"    , "Init"		      , 
 	save="PhaseF")
+=======
+AddField('PhaseF'   ,stencil2d=2, group="phi")
+#AddField('SolidNode',stencil2d=2, group="TypeFlag")
+# Stages - processes to run for initialisation and each iteration
+AddStage("PhaseInit"    , "Init"		      , 
+	save=Fields$group=="phi")# | Fields$group=="TypeFlag")
+>>>>>>> bf26405141afd7f7f01b1338358fd27a665e29aa
 AddStage("BaseInit"     , "Init_distributions", 
 	save=Fields$group=="f" | Fields$group=="h")
 AddStage("calcPhase"	, "calcPhaseF"        , 
 	save="PhaseF"                             , 
 	load=DensityAll$group=="h")
+<<<<<<< HEAD
+=======
+#AddStage("WallPhase"    , "calcWallPhaseF"   , 
+#	save="PhaseF"                             , 
+#	load=DensityAll$group=="h")
+>>>>>>> bf26405141afd7f7f01b1338358fd27a665e29aa
 AddStage("BaseIter"     , "Run"			      , 
 	save=Fields$group=="f" | Fields$group=="h", 
 	load=DensityAll$group=="f" | DensityAll$group=="h")
 
+<<<<<<< HEAD
+=======
+#AddAction("Iteration", c("BaseIter", "calcPhase","WallPhase"))
+>>>>>>> bf26405141afd7f7f01b1338358fd27a665e29aa
 AddAction("Iteration", c("BaseIter", "calcPhase"))
 AddAction("Init"     , c("PhaseInit", "BaseInit","calcPhase"))
 
@@ -58,8 +76,13 @@ AddSetting(name="sigma", 		   comment='surface tension')
 # 	Inputs: Fluid Properties
 AddSetting(name="omega_l", comment='one over relaxation time (low density fluid)')
 AddSetting(name="omega_h", comment='one over relaxation time (high density fluid)')
+<<<<<<< HEAD
 AddSetting(name="nu_l", omega_l='1.0/(3*nu_l)', default=0.16666666, comment='kinematic viscosity')
 AddSetting(name="nu_h", omega_h='1.0/(3*nu_h)', default=0.16666666, comment='kinematic viscosity')
+=======
+AddSetting(name="nu_l", omega_l='1.0/(3*nu_l)', default=0.33333333, comment='kinematic viscosity')
+AddSetting(name="nu_h", omega_h='1.0/(3*nu_h)', default=0.33333333, comment='kinematic viscosity')
+>>>>>>> bf26405141afd7f7f01b1338358fd27a665e29aa
 AddSetting(name="S0", default=1.0, comment='Relaxation Param')
 AddSetting(name="S1", default=1.0, comment='Relaxation Param')
 AddSetting(name="S2", default=1.0, comment='Relaxation Param')
@@ -77,6 +100,18 @@ AddSetting(name="BuoyancyX", default=0.0, comment='applied (rho-rho_h)*BuoyancyX
 AddSetting(name="BuoyancyY", default=0.0, comment='applied (rho-rho_h)*BuoyancyY')
 AddSetting(name="GmatchedX", default=0.0, comment='applied (1-phi)*GmatchedX')
 AddSetting(name="GmatchedY", default=0.0, comment='applied (1-phi)*GmatchedY')
+<<<<<<< HEAD
+=======
+# 	NodeTypes for finite difference at boundaries.
+AddNodeType("Wallwest","BOUNDARY")
+AddNodeType("Walleast","BOUNDARY")
+AddNodeType("Wallsouth","BOUNDARY")
+AddNodeType("Wallnorth","BOUNDARY")
+AddNodeType("Solidwest","BOUNDARY")
+AddNodeType("Solideast","BOUNDARY")
+AddNodeType("Solidsouth","BOUNDARY")
+AddNodeType("Solidnorth","BOUNDARY")
+>>>>>>> bf26405141afd7f7f01b1338358fd27a665e29aa
 # Globals - table of global integrals that can be monitored and optimized
 AddGlobal(name="PressureLoss", comment='pressure loss', unit="1mPa")
 AddGlobal(name="OutletFlux", comment='pressure loss', unit="1m2/s")

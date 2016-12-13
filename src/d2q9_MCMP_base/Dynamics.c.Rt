@@ -1,6 +1,7 @@
 // 25/5/2016 - Model Developed based on Chp 3 of:
 // """"Multiphase Lattice Boltzmann methods: Theory and Application""""
 // Chp 3: Shan and Chen-type multi-component multiphase models
+// i.e. MCMP_base = multicomponent multiphase_base Shan-Chen model
 // e.g. files start with d2q9_pp_MCMP
 // Maintainer: Travis-Mitchell @TravisMitchell
 

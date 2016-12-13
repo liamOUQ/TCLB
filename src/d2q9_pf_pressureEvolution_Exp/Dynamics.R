@@ -52,9 +52,13 @@ AddQuantity(name="Solid",unit="1")
 #	Inputs: For phasefield evolution
 AddSetting(name="Density_h", comment='High density')
 AddSetting(name="Density_l", comment='Low  density')
+<<<<<<< HEAD
 #AddSetting(name="PhaseField_h", default=1, comment='PhaseField in Liquid')
 #AddSetting(name="PhaseField_l", default=0, comment='PhaseField gas')
 AddSetting(name="PhaseField", 	   comment='Initial PhaseField distribution', zonal=T)
+=======
+AddSetting(name="PhaseField", 	   comment='Initial PhaseField distribution (0 or 1)', zonal=T)
+>>>>>>> bf26405141afd7f7f01b1338358fd27a665e29aa
 AddSetting(name="contactAngle", default=90)
 AddSetting(name="W", default=4,    comment='Anti-diffusivity coeff')
 AddSetting(name="M", default=0.05, comment='Mobility')
