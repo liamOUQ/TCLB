@@ -18,3 +18,7 @@ wiki
 p
 *.pyc
 .Rproj.user
+ReviewPaperSims/
+example/d2q9_pf_pressureEvolution
+example/d2q9_pp_LBL
+example/d2q9_pp_MCMP
