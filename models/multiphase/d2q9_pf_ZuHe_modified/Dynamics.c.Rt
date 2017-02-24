@@ -193,8 +193,8 @@ int i;
 // 		Force Calc
 	F_pressure[0] = (-1.0/3.0) * p * (Density_h-Density_l) * gradPhi.x;
 	F_pressure[1] = (-1.0/3.0) * p * (Density_h-Density_l) * gradPhi.y;
-	F_body[0] = (Density_h-rho)*BuoyancyX + rho*GravitationX;
-	F_body[1] = (Density_h-rho)*BuoyancyY + rho*GravitationY;
+	F_body[0] = (rho-Density_h)*BuoyancyX + rho*GravitationX;
+	F_body[1] = (rho-Density_h)*BuoyancyY + rho*GravitationY;
 		// Stress/strain Tensor
 	stress[0] = 0.0;
 	stress[1] = 0.0;
@@ -361,8 +361,8 @@ int i;
 // 		Force Calc
 	F_pressure[0] = (-1.0/3.0) * p * (Density_h-Density_l) * gradPhi.x;
 	F_pressure[1] = (-1.0/3.0) * p * (Density_h-Density_l) * gradPhi.y;
-	F_body[0] = (Density_h-rho)*BuoyancyX + rho*GravitationX;
-	F_body[1] = (Density_h-rho)*BuoyancyY + rho*GravitationY;
+	F_body[0] = (rho-Density_h)*BuoyancyX + rho*GravitationX;
+	F_body[1] = (rho-Density_h)*BuoyancyY + rho*GravitationY;
 		// Stress/strain Tensor
 	stress[0] = 0.0;
 	stress[1] = 0.0;
@@ -498,8 +498,8 @@ CudaDeviceFunction void CollisionBGK(){
 	// CALCULATE FORCES:
 	F_pressure[0] = (-1.0/3.0) * p * (Density_h-Density_l) * gradPhi.x;
 	F_pressure[1] = (-1.0/3.0) * p * (Density_h-Density_l) * gradPhi.y;
-	F_body[0] = (Density_h-rho)*BuoyancyX + rho*GravitationX;
-	F_body[1] = (Density_h-rho)*BuoyancyY + rho*GravitationY;
+	F_body[0] = (rho-Density_h)*BuoyancyX + rho*GravitationX;
+	F_body[1] = (rho-Density_h)*BuoyancyY + rho*GravitationY;
 		// Stress/strain Tensor
 	stress[0] = 0.0;
 	stress[1] = 0.0;
