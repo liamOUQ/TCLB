@@ -35,7 +35,9 @@ AddDensity(
 )
 
 AddQuantity( name="P",unit="Pa")
+AddQuantity( name="Rho", unit="kg/m3")
 AddQuantity( name="U",unit="m/s",vector=T)
+AddQuantity( name="NodeForce",unit="mkg/s2",vector=T)
 
 AddSetting(name="omega", comment='One over relaxation time')
 AddSetting(name="nu", omega='1.0/(3*nu + 0.5)', default=0.16666666, comment='Viscosity', unit="1m2/s")
@@ -53,9 +55,15 @@ AddNodeType("XYslice",group="ADDITIONALS");
 AddNodeType("XZslice",group="ADDITIONALS");
 AddNodeType("YZslice",group="ADDITIONALS");
 
+AddNodeType("IMBwall", group="BOUNDARY")
+
 #AddGlobal(name="XFlux", comment='Volume flux', unit="m3/s")
 #AddGlobal(name="YFlux", comment='Volume flux', unit="m3/s")
 #AddGlobal(name="ZFlux", comment='Volume flux', unit="m3/s")
+
+AddGlobal( name="SolidForceX", comment="Total X force acting on solid nodes", unit="mkg/s2")
+AddGlobal( name="SolidForceY", comment="Total Y force acting on solid nodes", unit="mkg/s2")
+AddGlobal( name="SolidForceZ", comment="Total Z force acting on solid nodes", unit="mkg/s2")
 
 AddGlobal(name="XYvx", comment='Volume flux', unit="m3/s")
 AddGlobal(name="XYvy", comment='Volume flux', unit="m3/s")

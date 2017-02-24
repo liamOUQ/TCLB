@@ -39,6 +39,67 @@ CudaDeviceFunction vector_t getU(){
 	return u;
 }
 
+CudaDeviceFunction vector_t getNodeForce(){
+	vector_t Force;
+	if ((NodeType & NODE_BOUNDARY) == NODE_Wall){
+		Force.x = -2.0 * (-f14 + f13 - f12 + f11 - f10 + f9 - f8 + f7 - f2 + f1);
+		Force.y = -2.0 * (-f18 + f17 - f16 + f15 - f10 - f9 + f8 + f7 - f4 + f3);
+		Force.z = -2.0 * (-f18 - f17 + f16 + f15 - f14 - f13 + f12 + f11 - f6 + f5);
+	}	else if ((NodeType & NODE_BOUNDARY) == NODE_IMBwall){
+		real_t f[19];
+		real_t rho, Jx, Jy, Jz;
+
+		rho = f18 + f17 + f16 + f15 + f14 + f13 + f12 + f11 + f10 + f9 + f8 + f7 + f6 + f5 + f4 + f3 + f2 + f1 + f0;
+		Jx = -f14 + f13 - f12 + f11 - f10 + f9 - f8 + f7 - f2 + f1;
+		Jy = -f18 + f17 - f16 + f15 - f10 - f9 + f8 + f7 - f4 + f3;
+		Jz = -f18 - f17 + f16 + f15 - f14 - f13 + f12 + f11 - f6 + f5;
+
+		f[1] = 1.0* (f2 - f1 - (( -Jx + ( -Jz*Jz - Jy*Jy + Jx*Jx )/rho )*3. )/18.);
+		f[2] = 1.0* (f1 - f2 - ((  Jx + ( -Jz*Jz - Jy*Jy + Jx*Jx )/rho )*3. )/18.);
+
+		f[3] = 1.0* (f4 - f3  - (( -Jy + ( -Jz*Jz + Jy*Jy - Jx*Jx )/rho )*3. )/18.);
+		f[4] = 1.0* (f3 - f4  - ((  Jy + ( -Jz*Jz + Jy*Jy - Jx*Jx )/rho )*3. )/18.);
+
+		f[5] = 1.0* (f6 - f5  - (( -Jz + ( Jz*Jz - Jy*Jy - Jx*Jx )/rho )*3. )/18.);
+		f[6] = 1.0* (f5 - f6  - ((  Jz + ( Jz*Jz - Jy*Jy - Jx*Jx )/rho )*3. )/18.);
+
+		f[7]  = 1.0* (f10 - f7  - (( -Jy - Jx + ( Jy*Jy + ( Jx + Jy*3. )*Jx )/rho )*3. )/36.);
+		f[10] = 1.0* (f7 - f10 - ((  Jy + Jx + ( Jy*Jy + ( Jx + Jy*3. )*Jx )/rho )*3. )/36.);
+
+		f[8] = 1.0* (f9 - f8 - (( -Jy + Jx + ( Jy*Jy + ( Jx - Jy*3. )*Jx )/rho )*3. )/36.);
+		f[9] = 1.0* (f8 - f9 - ((  Jy - Jx + ( Jy*Jy + ( Jx - Jy*3. )*Jx )/rho )*3. )/36.);
+
+
+		f[11] = 1.0* (f14 - f11 - (( -Jz - Jx + ( Jz*Jz + ( Jx + Jz*3. )*Jx )/rho )*3. )/36.);
+		f[14] = 1.0* (f11 - f14 - ((  Jz + Jx + ( Jz*Jz + ( Jx + Jz*3. )*Jx )/rho )*3. )/36.);
+
+
+		f[12] = 1.0* (f13 - f12 - (( -Jz + Jx + ( Jz*Jz + ( Jx - Jz*3. )*Jx )/rho )*3. )/36.);
+		f[13] = 1.0* (f12 - f13 - ((  Jz - Jx + ( Jz*Jz + ( Jx - Jz*3. )*Jx )/rho )*3. )/36.);
+		
+
+		f[15] = 1.0* (f18 - f15 - (( -Jz - Jy + ( Jz*Jz + ( Jy + Jz*3. )*Jy )/rho )*3. )/36.);
+		f[18] = 1.0* (f15 - f18 - ((  Jz + Jy + ( Jz*Jz + ( Jy + Jz*3. )*Jy )/rho )*3. )/36.);
+
+
+		f[16] = 1.0* (f17 - f16 - (( -Jz + Jy + ( Jz*Jz + ( Jy - Jz*3. )*Jy )/rho )*3. )/36.);
+		f[17] = 1.0* (f16 - f17 - ((  Jz - Jy + ( Jz*Jz + ( Jy - Jz*3. )*Jy )/rho )*3. )/36.);
+
+		Force.x = (-f[14] + f[13] - f[12] + f[11] - f[10] + f[9] - f[8] + f[7] - f[2] + f[1]);
+		Force.y = (-f[18] + f[17] - f[16] + f[15] - f[10] - f[9] + f[8] + f[7] - f[4] + f[3]);
+		Force.z = (-f[18] - f[17] + f[16] + f[15] - f[14] - f[13] + f[12] + f[11] - f[6] + f[5]);
+
+	}	else {
+		Force.x = 0.0;
+		Force.y = 0.0;
+		Force.z = 0.0;
+	}
+
+
+
+	return Force;
+}
+
 CudaDeviceFunction float2 Color() {
         float2 ret;
         vector_t u = getU();
@@ -72,7 +133,103 @@ CudaDeviceFunction void BounceBack()
 		})
 		}
 	NULL})
-?>}
+?>
+		AddToSolidForceX( 2.0 * (-f14 + f13 - f12 + f11 - f10 + f9 - f8 + f7 - f2 + f1)    );
+		AddToSolidForceY( 2.0 * (-f18 + f17 - f16 + f15 - f10 - f9 + f8 + f7 - f4 + f3)    );
+		AddToSolidForceZ( 2.0 * (-f18 - f17 + f16 + f15 - f14 - f13 + f12 + f11 - f6 + f5) );
+
+}
+
+CudaDeviceFunction void IMBBounceBack(){
+	real_t rho, Jx, Jy, Jz, tmp;
+
+	rho = f18 + f17 + f16 + f15 + f14 + f13 + f12 + f11 + f10 + f9 + f8 + f7 + f6 + f5 + f4 + f3 + f2 + f1 + f0;
+	Jx = -f14 + f13 - f12 + f11 - f10 + f9 - f8 + f7 - f2 + f1;
+	Jy = -f18 + f17 - f16 + f15 - f10 - f9 + f8 + f7 - f4 + f3;
+	Jz = -f18 - f17 + f16 + f15 - f14 - f13 + f12 + f11 - f6 + f5;
+
+// IMB operator with stationary particle, so loss rho*wi from equilibrium.
+/*	f0 = f0 - (( -Jz*Jz - Jy*Jy - Jx*Jx )/rho )/3.;
+
+	tmp = f1;
+	f1 = f1 + 1.0* (f2 - f1 - ((  Jx + ( -Jz*Jz - Jy*Jy + Jx*Jx )/rho )*3. )/18.);
+	f2 = f2 + 1.0* (tmp- f1 - (( -Jx + ( -Jz*Jz - Jy*Jy + Jx*Jx )/rho )*3. )/18.);
+
+	tmp = f3;
+	f3 = f3 + 1.0* (f4 - f3  - ((  Jy + ( -Jz*Jz + Jy*Jy - Jx*Jx )/rho )*3. )/18.);
+	f4 = f4 + 1.0* (tmp- f4  - (( -Jy + ( -Jz*Jz + Jy*Jy - Jx*Jx )/rho )*3. )/18.);
+
+	tmp = f5;
+	f5 = f5 + 1.0* (f6 - f5  - ((  Jz + ( Jz*Jz - Jy*Jy - Jx*Jx )/rho )*3. )/18.);
+	f6 = f6 + 1.0* (tmp- f6  - (( -Jz + ( Jz*Jz - Jy*Jy - Jx*Jx )/rho )*3. )/18.);
+
+	tmp = f7;
+	f7  = f7 + 1.0* (f10 - f7  - ((  Jy + Jx + ( Jy*Jy + ( Jx + Jy*3. )*Jx )/rho )*3. )/36.);
+	f10 = f10 + 1.0*(tmp - f10 - (( -Jy - Jx + ( Jy*Jy + ( Jx + Jy*3. )*Jx )/rho )*3. )/36.);
+
+	tmp = f8;
+	f8 = f8 + 1.0* (f9 - f8 - ((  Jy - Jx + ( Jy*Jy + ( Jx - Jy*3. )*Jx )/rho )*3. )/36.);
+	f9 = f9 + 1.0* (tmp- f9 - (( -Jy + Jx + ( Jy*Jy + ( Jx - Jy*3. )*Jx )/rho )*3. )/36.);
+
+	tmp = f11;
+	f11 = f11 + 1.0* (f14 - f11 - ((  Jz + Jx + ( Jz*Jz + ( Jx + Jz*3. )*Jx )/rho )*3. )/36.);
+	f14 = f14 + 1.0* (tmp - f14 - (( -Jz - Jx + ( Jz*Jz + ( Jx + Jz*3. )*Jx )/rho )*3. )/36.);
+
+	tmp = f12;
+	f12 = f12 + 1.0* (f13 - f12 - ((  Jz - Jx + ( Jz*Jz + ( Jx - Jz*3. )*Jx )/rho )*3. )/36.);
+	f13 = f13 + 1.0* (tmp - f13 - (( -Jz + Jx + ( Jz*Jz + ( Jx - Jz*3. )*Jx )/rho )*3. )/36.);
+	
+	tmp = f15;
+	f15 = f15 + 1.0* (f18 - f15 - ((  Jz + Jy + ( Jz*Jz + ( Jy + Jz*3. )*Jy )/rho )*3. )/36.);
+	f18 = f18 + 1.0* (tmp - f18 - (( -Jz - Jy + ( Jz*Jz + ( Jy + Jz*3. )*Jy )/rho )*3. )/36.);
+
+	tmp = f16;
+	f16 = f16 + 1.0* (f17 - f16 - (( Jz - Jy + ( Jz*Jz + ( Jy - Jz*3. )*Jy )/rho )*3. )/36.);
+	f17 = f17 + 1.0* (tmp - f17 - (( -Jz + Jy + ( Jz*Jz + ( Jy - Jz*3. )*Jy )/rho )*3. )/36.);*/
+
+	f0 = f0 - 1.0* (( -Jz*Jz - Jy*Jy - Jx*Jx )/rho )/3.;
+
+	tmp = f1;
+	f1 = f1 + 1.0* (f2 - f1 - (( -Jx + ( -Jz*Jz - Jy*Jy + Jx*Jx )/rho )*3. )/18.);
+	f2 = f2 + 1.0* (tmp- f2 - ((  Jx + ( -Jz*Jz - Jy*Jy + Jx*Jx )/rho )*3. )/18.);
+
+	tmp = f3;
+	f3 = f3 + 1.0* (f4 - f3  - (( -Jy + ( -Jz*Jz + Jy*Jy - Jx*Jx )/rho )*3. )/18.);
+	f4 = f4 + 1.0* (tmp- f4  - ((  Jy + ( -Jz*Jz + Jy*Jy - Jx*Jx )/rho )*3. )/18.);
+
+	tmp = f5;
+	f5 = f5 + 1.0* (f6 - f5  - (( -Jz + ( Jz*Jz - Jy*Jy - Jx*Jx )/rho )*3. )/18.);
+	f6 = f6 + 1.0* (tmp- f6  - ((  Jz + ( Jz*Jz - Jy*Jy - Jx*Jx )/rho )*3. )/18.);
+
+	tmp = f7;
+	f7  = f7 + 1.0* (f10 - f7  - (( -Jy - Jx + ( Jy*Jy + ( Jx + Jy*3. )*Jx )/rho )*3. )/36.);
+	f10 = f10 + 1.0*(tmp - f10 - ((  Jy + Jx + ( Jy*Jy + ( Jx + Jy*3. )*Jx )/rho )*3. )/36.);
+
+	tmp = f8;
+	f8 = f8 + 1.0* (f9 - f8 - (( -Jy + Jx + ( Jy*Jy + ( Jx - Jy*3. )*Jx )/rho )*3. )/36.);
+	f9 = f9 + 1.0* (tmp- f9 - ((  Jy - Jx + ( Jy*Jy + ( Jx - Jy*3. )*Jx )/rho )*3. )/36.);
+
+	tmp = f11;
+	f11 = f11 + 1.0* (f14 - f11 - (( -Jz - Jx + ( Jz*Jz + ( Jx + Jz*3. )*Jx )/rho )*3. )/36.);
+	f14 = f14 + 1.0* (tmp - f14 - ((  Jz + Jx + ( Jz*Jz + ( Jx + Jz*3. )*Jx )/rho )*3. )/36.);
+
+	tmp = f12;
+	f12 = f12 + 1.0* (f13 - f12 - (( -Jz + Jx + ( Jz*Jz + ( Jx - Jz*3. )*Jx )/rho )*3. )/36.);
+	f13 = f13 + 1.0* (tmp - f13 - ((  Jz - Jx + ( Jz*Jz + ( Jx - Jz*3. )*Jx )/rho )*3. )/36.);
+	
+	tmp = f15;
+	f15 = f15 + 1.0* (f18 - f15 - (( -Jz - Jy + ( Jz*Jz + ( Jy + Jz*3. )*Jy )/rho )*3. )/36.);
+	f18 = f18 + 1.0* (tmp - f18 - ((  Jz + Jy + ( Jz*Jz + ( Jy + Jz*3. )*Jy )/rho )*3. )/36.);
+
+	tmp = f16;
+	f16 = f16 + 1.0* (f17 - f16 - (( -Jz + Jy + ( Jz*Jz + ( Jy - Jz*3. )*Jy )/rho )*3. )/36.);
+	f17 = f17 + 1.0* (tmp - f17 - ((  Jz - Jy + ( Jz*Jz + ( Jy - Jz*3. )*Jy )/rho )*3. )/36.);
+
+	AddToSolidForceX( 2.0 * (-f14 + f13 - f12 + f11 - f10 + f9 - f8 + f7 - f2 + f1)    );
+	AddToSolidForceY( 2.0 * (-f18 + f17 - f16 + f15 - f10 - f9 + f8 + f7 - f4 + f3)    );
+	AddToSolidForceZ( 2.0 * (-f18 - f17 + f16 + f15 - f14 - f13 + f12 + f11 - f6 + f5) );
+}
+
 
 CudaDeviceFunction void EVelocity()
 {
@@ -200,12 +357,16 @@ CudaDeviceFunction void Run() {
 	case NODE_Wall:
 	case NODE_Solid:
 		BounceBack();
-                break;
+        break;
+    case NODE_IMBwall:
+    	IMBBounceBack();
     }
     switch (NodeType & NODE_COLLISION) {
 	case NODE_MRT:
 		CollisionMRT();
 		break;
+	case NODE_BGK:
+		CollisionBGK();
     }
 }
 
@@ -250,6 +411,74 @@ CudaDeviceFunction void CollisionMRT()
 	S[c(1,4,6,8)] = 0;
 	S[c(2,3,10:16)] = PV("gamma1");
 	S[c(5,7,9,17:19)] = PV("gamma2");
+	C(R, f %*% MRTMAT);
+	C(R[selR], (S*(R-Req))[selR]);
+?>
+    Jx += rho*ForceX;
+    Jy += rho*ForceY;
+    Jz += rho*ForceZ;
+<?R
+	C(R[selR], (R + Req)[selR]);
+	# nearly ortogonal MRT matrix
+        Mw = colSums(MRTMAT**2)
+	C(R,  Mw, eq="/=")
+	C( f, R %*% t(MRTMAT) , float=F);
+?>
+    real_t ux,uy,uz;
+    ux = Jx / rho;
+    uy = Jy / rho;
+    uz = Jz / rho;
+    switch (NodeType & NODE_ADDITIONALS) {
+    <?R for (plane in c("XY","XZ","YZ")) { ?>
+    case NODE_<?%s plane ?>slice:
+     AddTo<?%s plane ?>vx(ux);
+     AddTo<?%s plane ?>vy(uy);
+     AddTo<?%s plane ?>vz(uz);
+     AddTo<?%s plane ?>rho(rho);
+     AddTo<?%s plane ?>area(1);
+     break;
+    <?R } ?>
+    }
+    AddToVOLvx(ux);
+    AddToVOLvy(uy);
+    AddToVOLvz(uz);
+    AddToVOLpx(Jx);
+    AddToVOLpy(Jy);
+    AddToVOLpz(Jz);
+    AddToVOLrho(rho);
+    AddToVOLvolume(1);
+    AddToMaxV(sqrt(ux*ux+uy*uy+uz*uz));
+}
+
+CudaDeviceFunction void CollisionBGK()
+{
+	real_t omT;
+	real_t <?R C(R, sep=", ") ?>;
+        #define S1 0.0
+        #define S2 omega
+        #define S3 omega
+        #define S4 0.0
+        #define S5 omega2
+        #define S6 0.0
+        #define S7 omega2
+        #define S8 0.0
+        #define S9 omega2
+        #define S10 omega
+        #define S11 omega
+        #define S12 omega
+        #define S13 omega
+        #define S14 omega
+        #define S15 omega
+        #define S16 omega
+        #define S17 omega2
+        #define S18 omega2
+        #define S19 omega2
+        real_t gamma1 = 1 - omega;
+<?R
+	S = PV("S",1:19);
+	S[c(1,4,6,8)] = PV("gamma1");
+	S[c(2,3,10:16)] = PV("gamma1");
+	S[c(5,7,9,17:19)] = PV("gamma1");
 	C(R, f %*% MRTMAT);
 	C(R[selR], (S*(R-Req))[selR]);
 ?>
