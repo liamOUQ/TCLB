@@ -122,7 +122,7 @@ CudaDeviceFunction void Run() {
 CudaDeviceFunction void CollisionMRT(){
 int i;
 	real_t C = PhaseF(0,0), mu;
-	real_t tau, rho, p;				// Macroscopic Properties
+	real_t tau, DynVisc, rho, p;			// Macroscopic Properties
 	vector_t gradPhi;				// Phase field gradients
 	real_t nx, ny;					// Normals
 	real_t Gamma[9], geq[9], mag;	// equilibrium, pressure equilibrium, velocity magnitude
@@ -137,7 +137,7 @@ int i;
 	rho = Density_l + (C - PhaseField_l)*(Density_h - Density_l);
 	p = g[0]+g[1]+g[2]+g[3]+g[4]+g[5]+g[6]+g[7]+g[8];
 
-	if ( C < PhaseField_l){
+/*	if ( C < PhaseField_l){
 		tau = tau_l + 0.5;
 		} else if (C > PhaseField_h) {
 		tau = tau_h + 0.5;
@@ -146,6 +146,11 @@ int i;
 		tau = 1.0/tau + 0.5;
 	}
 	//	tau = 0.5 + tau_l*tau_h*(PhaseField_h-PhaseField_l)/((C-PhaseField_l)*tau_l + (PhaseField_h-C)*tau_h);
+*/
+
+// A. Fakhari - found Dynamic Viscosity works better in updating tau:
+	DynVisc = Density_l*Viscosity_l + C * (Density_h*Viscosity_h - Density_l*Viscosity_l);
+	tau = 3.0 * DynVisc / rho + 0.5;
 
 // 		Gradients & Normals
 	gradPhi = calcGradPhi();
@@ -317,7 +322,7 @@ int i;
 		g[i] = g[i]-R[i]+F_i[i]; 
 	}
 }
-
+/*
 CudaDeviceFunction void CollisionMRT_SRTstress(){
 int i;
 	real_t C = PhaseF(0,0), mu;
@@ -455,13 +460,13 @@ int i;
 		g[i] = g[i]-R[i]+F_i[i]; 
 	}
 }
-
+*/
 
 
 CudaDeviceFunction void CollisionBGK(){
 	int i;
 	real_t C = PhaseF(0,0), mu;
-	real_t tau, rho, p;				// Macroscopic Properties
+	real_t tau, DynVisc, rho, p;			// Macroscopic Properties
 	vector_t gradPhi;				// Phase field gradients
 	real_t nx, ny;					// Normals
 	real_t Gamma[9], geq[9], mag;	// equilibrium, pressure equilibrium, velocity magnitude
@@ -473,7 +478,7 @@ CudaDeviceFunction void CollisionBGK(){
 	mu = calcMu( C );
 	rho = Density_l + (C - PhaseField_l)*(Density_h - Density_l);
 	p = g[0]+g[1]+g[2]+g[3]+g[4]+g[5]+g[6]+g[7]+g[8];
-
+/*
 	if ( C < PhaseField_l){
 		tau = tau_l + 0.5;
 		} else if (C > PhaseField_h) {
@@ -482,6 +487,10 @@ CudaDeviceFunction void CollisionBGK(){
 		tau = (C - PhaseField_l)/(PhaseField_h - PhaseField_l) * (1.0/tau_h - 1.0/tau_l) + 1.0/tau_l;
 		tau = 1.0/tau + 0.5;
 	}
+*/
+// A. Fakhari - found Dynamic Viscosity works better in updating tau:
+	DynVisc = Density_l*Viscosity_l + C * (Density_h*Viscosity_h - Density_l*Viscosity_l);
+	tau = 3.0 * DynVisc / rho + 0.5;
 
 	// GRADIENTS AND NORMALS
 	gradPhi = calcGradPhi();
