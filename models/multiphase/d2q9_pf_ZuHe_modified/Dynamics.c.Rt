@@ -1,7 +1,7 @@
 // 04/02/2017 - Model Developed: A. Fakhari, T. Mitchell
-// """" An improved phase-field lattice Boltzmann model 
+// """" An improved phase-field lattice Boltzmann model
 //		for immiscible fluids at high density ratios """"
-// 
+//
 // Maintainer: Travis-Mitchell @TravisMitchell
 
 // Code updates:
@@ -12,7 +12,7 @@ CudaDeviceFunction real_t getRho(){
 	real_t rho;
 	rho = Density_l + (Density_h-Density_l) * (PhaseF(0,0) - PhaseField_l)/(PhaseField_h - PhaseField_l);
 	return rho;
-}  
+}
 CudaDeviceFunction real_t getPhaseField(){
 	return PhaseF(0,0);
 }
@@ -34,7 +34,7 @@ CudaDeviceFunction vector_t calcGradPhi(){
 	gradPhi.x = (PhaseF(1,0) - PhaseF(-1,0))/3.0 + (PhaseF(1,1) - PhaseF(-1,-1) + PhaseF(1,-1) - PhaseF(-1,1))/12.0;
 	gradPhi.y = (PhaseF(0,1) - PhaseF(0,-1))/3.0 + (PhaseF(1,1) - PhaseF(-1,-1) + PhaseF(-1,1) - PhaseF(1,-1))/12.0;
 	gradPhi.z = sqrt(gradPhi.x*gradPhi.x + gradPhi.y*gradPhi.y + 1e-12);;
-	
+
 	return gradPhi;
 }
 
@@ -44,13 +44,13 @@ CudaDeviceFunction void calcPhaseF(){
 
 CudaDeviceFunction real_t calcMu(real_t C){
 	real_t pfavg, lpPhi, mu;
-	
+
 	pfavg = 0.5*(PhaseField_l+PhaseField_h);
 	lpPhi = (PhaseF(1,1)+PhaseF(-1,1)+PhaseF(1,-1)+PhaseF(-1,-1) +
 				    4.0*(PhaseF(1,0)+PhaseF(-1,0)+PhaseF(0,1)+PhaseF(0,-1) ) -
 					20.0*C)/6.0;
-	
-	mu = 4.0*(12.0*sigma/W)*(C-PhaseField_l)*(C-PhaseField_h)*(C-pfavg) 
+
+	mu = 4.0*(12.0*sigma/W)*(C-PhaseField_l)*(C-PhaseField_h)*(C-pfavg)
 	       - (1.5 *sigma*W) * lpPhi;
 	return mu;
 }
@@ -120,7 +120,7 @@ CudaDeviceFunction void Run() {
 }
 
 CudaDeviceFunction void CollisionMRT(){
-int i;
+	int i;
 	real_t C = PhaseF(0,0), mu;
 	real_t tau, DynVisc, rho, p;			// Macroscopic Properties
 	vector_t gradPhi;				// Phase field gradients
@@ -137,25 +137,28 @@ int i;
 	rho = Density_l + (C - PhaseField_l)*(Density_h - Density_l);
 	p = g[0]+g[1]+g[2]+g[3]+g[4]+g[5]+g[6]+g[7]+g[8];
 
-/*	if ( C < PhaseField_l){
+	if ( C < PhaseField_l){
 		tau = tau_l + 0.5;
-		} else if (C > PhaseField_h) {
+	} else if (C > PhaseField_h) {
 		tau = tau_h + 0.5;
-		} else {
-		tau = (C - PhaseField_l)/(PhaseField_h - PhaseField_l) * (1.0/tau_h - 1.0/tau_l) + 1.0/tau_l;
-		tau = 1.0/tau + 0.5;
-	}
-	//	tau = 0.5 + tau_l*tau_h*(PhaseField_h-PhaseField_l)/((C-PhaseField_l)*tau_l + (PhaseField_h-C)*tau_h);
-*/
+	} else {
+		// Inverse update:
+		//tau = (C - PhaseField_l)/(PhaseField_h - PhaseField_l) * (1.0/tau_h - 1.0/tau_l) + 1.0/tau_l;
+		//tau = 1.0/tau + 0.5;
 
-// A. Fakhari - found Dynamic Viscosity works better in updating tau:
-	DynVisc = Density_l*Viscosity_l + C * (Density_h*Viscosity_h - Density_l*Viscosity_l);
-	tau = 3.0 * DynVisc / rho + 0.5;
+		// Linear update:
+		tau = 0.5 + tau_l + C*(tau_h - tau_l);
+
+		// Viscosity update:
+		//DynVisc = Density_l*Viscosity_l + C * (Density_h*Viscosity_h - Density_l*Viscosity_l);
+		//tau = 3.0 * DynVisc / rho + 0.5;
+}
 
 // 		Gradients & Normals
 	gradPhi = calcGradPhi();
-	nx = gradPhi.x/gradPhi.z;	//as in 2D, gradPhi.z is storing the magnitude of the vector
-	ny = gradPhi.y/gradPhi.z; 
+//as in 2D, gradPhi.z is storing the magnitude of the vector
+	nx = gradPhi.x/gradPhi.z;
+	ny = gradPhi.y/gradPhi.z;
 
 // 		MRT stuff
 	mag = U*U + V*V;
@@ -175,15 +178,15 @@ int i;
 	S[7] = -R[4] + R[3] - R[2] + R[1];
 	S[8] = -R[8] + R[7] - R[6] + R[5];
 	//	Relax in Momentum space:
-	S[0] *= S0;
+/*	S[0] *= S0;
 	S[1] *= S1;
 	S[2] *= S2;
 	S[3] *= S3;
 	S[4] *= S4;
 	S[5] *= S5;
-	S[6] *= S6;
+	S[6] *= S6;*/ // CURRENT DEFAULT - S0-S6=1.0
 	S[7] *= 1.0/(tau);
-	S[8] *= 1.0/(tau);	
+	S[8] *= 1.0/(tau);
 	//	Transform to back to shifted-Pressure space:
 	R[0] = ( S[2] - S[1] + S[0] )/9.;
 	R[1] = ( -S[1] + S[7]*9. + ( -S[2] + S[0]*2. + ( -S[4] + S[3] )*3. )*2. )/36.;
@@ -236,15 +239,15 @@ int i;
 	S[7] = -R[4] + R[3] - R[2] + R[1];
 	S[8] = -R[8] + R[7] - R[6] + R[5];
 	//	Relax in Momentum space:
-	S[0] *= S0;
+/*	S[0] *= S0;
 	S[1] *= S1;
 	S[2] *= S2;
 	S[3] *= S3;
 	S[4] *= S4;
 	S[5] *= S5;
-	S[6] *= S6;
+	S[6] *= S6;*/ // CURRENT DEFAULT - S0-S6=1.0
 	S[7] *= 1.0/(tau);
-	S[8] *= 1.0/(tau);	
+	S[8] *= 1.0/(tau);
 	//	Transform to back to shifted-Pressure space:
 	R[0] = ( S[2] - S[1] + S[0] )/9.;
 	R[1] = ( -S[1] + S[7]*9. + ( -S[2] + S[0]*2. + ( -S[4] + S[3] )*3. )*2. )/36.;
@@ -262,7 +265,7 @@ int i;
 	for (i=0;i< 9; i++){
 		stress[0] += R[i]*d2q9_ex[i]*d2q9_ex[i];
 		stress[1] += R[i]*d2q9_ex[i]*d2q9_ey[i];
-		stress[2] += R[i]*d2q9_ey[i]*d2q9_ey[i]; 
+		stress[2] += R[i]*d2q9_ey[i]*d2q9_ey[i];
 	}
 
 	F_mu[0] = (0.5-tau) * (stress[0]*gradPhi.x + stress[1]*gradPhi.y) * (Density_h-Density_l);
@@ -274,7 +277,7 @@ int i;
 
 // PHASE FIELD POPULATION UPDATE:
 	tmp1 = (1.0 - 4.0*(C - 0.5)*(C - 0.5))/W;
-	for (i=0; i< 9; i++){ 
+	for (i=0; i< 9; i++){
 		F_phi[i] = calcF_phi(i, tmp1, nx, ny); // Forcing Terms
 		heq[i] = C * Gamma[i] - 0.5*F_phi[i];  // heq
 		h[i] = h[i] - omega_phi * (h[i]-heq[i]) + F_phi[i];	// collision
@@ -298,15 +301,15 @@ int i;
 	S[8] = -R[8] + R[7] - R[6] + R[5];
 
 	//	Relax in Momentum space:
-	S[0] *= S0;
+/*	S[0] *= S0;
 	S[1] *= S1;
 	S[2] *= S2;
 	S[3] *= S3;
 	S[4] *= S4;
 	S[5] *= S5;
-	S[6] *= S6;
+	S[6] *= S6;*/ // CURRENT DEFAULT - S0-S6=1.0
 	S[7] *= 1.0/(tau);
-	S[8] *= 1.0/(tau);	
+	S[8] *= 1.0/(tau);
 	//	Transform to back to shifted-Pressure space:
 	R[0] = ( S[2] - S[1] + S[0] )/9.;
 	R[1] = ( -S[1] + S[7]*9. + ( -S[2] + S[0]*2. + ( -S[4] + S[3] )*3. )*2. )/36.;
@@ -319,10 +322,12 @@ int i;
 	R[8] = ( S[2] + ( S[1] + S[0]*2. )*2. + ( -S[6] + S[4] - S[8]*3. + ( -S[5] + S[3] )*2. )*3. )/36.;
 // 		Collision
 	for (i=0; i< 9; i++) {
-		g[i] = g[i]-R[i]+F_i[i]; 
+		g[i] = g[i]-R[i]+F_i[i];
 	}
 }
-/*
+/* FOR FUTURE TESTING AS TO WHETHER MRT FOR STRESS EFFECTS
+STABILITY + ACCURACY OR IF USING SRT FOR STRESS GIVES BETTER RUN TIME WITH
+NO REAL LOSS IN STABILITY + ACCURACY
 CudaDeviceFunction void CollisionMRT_SRTstress(){
 int i;
 	real_t C = PhaseF(0,0), mu;
@@ -400,7 +405,7 @@ int i;
 	for (i=0;i< 9; i++){
 		stress[0] += R[i]*d2q9_ex[i]*d2q9_ex[i];
 		stress[1] += R[i]*d2q9_ex[i]*d2q9_ey[i];
-		stress[2] += R[i]*d2q9_ey[i]*d2q9_ey[i]; 
+		stress[2] += R[i]*d2q9_ey[i]*d2q9_ey[i];
 	}
 
 	F_mu[0] = (0.5-tau)/tau * (stress[0]*gradPhi.x + stress[1]*gradPhi.y) * (Density_h-Density_l);
@@ -412,7 +417,7 @@ int i;
 
 // PHASE FIELD POPULATION UPDATE:
 	tmp1 = (1.0 - 4.0*(C - 0.5)*(C - 0.5))/W;
-	for (i=0; i< 9; i++){ 
+	for (i=0; i< 9; i++){
 		F_phi[i] = calcF_phi(i, tmp1, nx, ny); // Forcing Terms
 		heq[i] = C * Gamma[i] - 0.5*F_phi[i];  // heq
 		h[i] = h[i] - omega_phi * (h[i]-heq[i]) + F_phi[i];	// collision
@@ -444,7 +449,7 @@ int i;
 	S[5] *= S5;
 	S[6] *= S6;
 	S[7] *= 1.0/(tau);
-	S[8] *= 1.0/(tau);	
+	S[8] *= 1.0/(tau);
 	//	Transform to back to shifted-Pressure space:
 	R[0] = ( S[2] - S[1] + S[0] )/9.;
 	R[1] = ( -S[1] + S[7]*9. + ( -S[2] + S[0]*2. + ( -S[4] + S[3] )*3. )*2. )/36.;
@@ -457,7 +462,7 @@ int i;
 	R[8] = ( S[2] + ( S[1] + S[0]*2. )*2. + ( -S[6] + S[4] - S[8]*3. + ( -S[5] + S[3] )*2. )*3. )/36.;
 // 		Collision
 	for (i=0; i< 9; i++) {
-		g[i] = g[i]-R[i]+F_i[i]; 
+		g[i] = g[i]-R[i]+F_i[i];
 	}
 }
 */
@@ -469,33 +474,43 @@ CudaDeviceFunction void CollisionBGK(){
 	real_t tau, DynVisc, rho, p;			// Macroscopic Properties
 	vector_t gradPhi;				// Phase field gradients
 	real_t nx, ny;					// Normals
-	real_t Gamma[9], geq[9], mag;	// equilibrium, pressure equilibrium, velocity magnitude
+	real_t Gamma[9], geq[9], mag;			// equilibrium, pressure equilibrium, velocity magnitude
 	real_t F_pressure[2], F_body[2], F_mu[2], F_total[2]; // Forces
-	real_t tmp1, stress[3];			// Stress tensor calculation
-	real_t F_phi[9], heq[9];		// Phase field collision terms
+	real_t tmp1, stress[3];				// Stress tensor calculation
+	real_t F_phi[9], heq[9];			// Phase field collision terms
 	real_t F_i[9];					// Momentum distribution forcing term
+
 // Find Macroscopic Details
 	mu = calcMu( C );
 	rho = Density_l + (C - PhaseField_l)*(Density_h - Density_l);
 	p = g[0]+g[1]+g[2]+g[3]+g[4]+g[5]+g[6]+g[7]+g[8];
-/*
+
+// Updating of tau:
+//    Updating via the kinematic viscosity here gives more stable solutions
+//    Updating via the dynVisc section of the code is more accurate
+//        but will go unstable for low viscosities
 	if ( C < PhaseField_l){
 		tau = tau_l + 0.5;
-		} else if (C > PhaseField_h) {
+	} else if (C > PhaseField_h) {
 		tau = tau_h + 0.5;
-		} else {
-		tau = (C - PhaseField_l)/(PhaseField_h - PhaseField_l) * (1.0/tau_h - 1.0/tau_l) + 1.0/tau_l;
-		tau = 1.0/tau + 0.5;
+	} else {
+		// Inverse update:
+		//tau = (C - PhaseField_l)/(PhaseField_h - PhaseField_l) * (1.0/tau_h - 1.0/tau_l) + 1.0/tau_l;
+		//tau = 1.0/tau + 0.5;
+
+		// Linear update:
+		tau = 0.5 + tau_l + C*(tau_h - tau_l);
+
+		// Viscosity update:
+		//DynVisc = Density_l*Viscosity_l + C * (Density_h*Viscosity_h - Density_l*Viscosity_l);
+		//tau = 3.0 * DynVisc / rho + 0.5;
 	}
-*/
-// A. Fakhari - found Dynamic Viscosity works better in updating tau:
-	DynVisc = Density_l*Viscosity_l + C * (Density_h*Viscosity_h - Density_l*Viscosity_l);
-	tau = 3.0 * DynVisc / rho + 0.5;
 
 	// GRADIENTS AND NORMALS
 	gradPhi = calcGradPhi();
-	nx = gradPhi.x/gradPhi.z;	//as in 2D, gradPhi.z is storing the magnitude of the vector
-	ny = gradPhi.y/gradPhi.z; 
+// As in 2D, gradPhi.z is storing the magnitude of the vector
+	nx = gradPhi.x/gradPhi.z;
+	ny = gradPhi.y/gradPhi.z;
 
 	// GAMMA AND EQUILIBRIUM
 	mag = U*U + V*V;
@@ -526,7 +541,6 @@ CudaDeviceFunction void CollisionBGK(){
 	U = g[1]-g[3]+g[5]-g[6]-g[7]+g[8] + 0.5*F_total[0]/rho;
 	V = g[2]-g[4]+g[5]+g[6]-g[7]-g[8] + 0.5*F_total[1]/rho;
 
-
 // RECALCULATE GAMMA
 	mag = U*U + V*V;
 	for (i=0; i< 9; i++){
@@ -540,7 +554,7 @@ CudaDeviceFunction void CollisionBGK(){
 		tmp1 = g[i] - geq[i];
 		stress[0] += tmp1*d2q9_ex[i]*d2q9_ex[i];
 		stress[1] += tmp1*d2q9_ex[i]*d2q9_ey[i];
-		stress[2] += tmp1*d2q9_ey[i]*d2q9_ey[i]; 
+		stress[2] += tmp1*d2q9_ey[i]*d2q9_ey[i];
 	}
 
 	F_mu[0] = (0.5-tau)/tau * (stress[0]*gradPhi.x + stress[1]*gradPhi.y) * (Density_h-Density_l);
@@ -552,7 +566,7 @@ CudaDeviceFunction void CollisionBGK(){
 
 // PHASE FIELD POPULATION UPDATE:
 	tmp1 = (1.0 - 4.0*(C - 0.5)*(C - 0.5))/W;
-	for (i=0; i< 9; i++){ 
+	for (i=0; i< 9; i++){
 		F_phi[i] = calcF_phi(i, tmp1, nx, ny); // Forcing Terms
 		heq[i] = C * Gamma[i] - 0.5*F_phi[i];  // heq
 		h[i] = h[i] - omega_phi * (h[i]-heq[i]) + F_phi[i];	// collision
