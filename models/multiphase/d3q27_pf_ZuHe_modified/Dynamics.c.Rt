@@ -13,38 +13,41 @@
     source("conf.R")
     c_header();
 
-    g=PV(DensityAll$name[DensityAll$group=="g")
-    rho =  PV("rho")
-    J = PV("J",c("x","y","z"))
-    tmp = PV("tmp")
+    g=PV(DensityAll$name[DensityAll$group=="g"])
+#   rho =  PV("rho")
+#   J = PV("J",c("x","y","z"))
+#   tmp = PV("tmp")
 
 # Extracting velocity set
     U = as.matrix(DensityAll[DensityAll$group=="g",c("dx","dy","dz")])
-
+    u = PV(c("U","V","W"))
 # Calculating equlibrium density set
-	source("lib/feq.R")
-	source("lib/boundary.R")
+#	source("lib/feq.R")
+#	source("lib/boundary.R")
 
-	EQ = MRT_eq(U, rho, J, ortogonal=FALSE);
+#	EQ = MRT_eq(U, rho, J, ortogonal=FALSE);
 
 ?>
 
 
-CudaConstantMemory real_t const wg = {1.0/216.0, 1.0/54.0, 1.0/216.0, 1.0/54.0, 2.0/27.0, 1.0/54.0, 1.0/216.0,
-                                      1.0/54.0, 1.0/216.0, 1.0/54.0, 2.0/27.0, 1.0/54.0,  2.0/27.0, 8.0/27.0,
-				      2.0/27.0, 1.0/54.0,  2.0/27.0, 1.0/54.0, 1.0/216.0, 1.0/54.0, 1.0/216.0,
-				      1.0/54.0, 2.0/27.0,  1.0/54.0, 1.0/216.0,1.0/54.0, 1.0/216.0 };
-CudaConstantMemory real_t const wh = {2.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0,
+CudaConstantMemory real_t const wg[27] = {8.0/27.0,
+				      2.0/27.0, 2.0/27.0, 2.0/27.0, 2.0/27.0, 2.0/27.0, 2.0/27.0,
+                                      1.0/216.0, 1.0/216.0, 1.0/216.0, 1.0/216.0,
+				      1.0/216.0, 1.0/216.0, 1.0/216.0, 1.0/216.0,
+				      1.0/54.0,  1.0/54.0,  1.0/54.0,  1.0/54.0,
+				      1.0/54.0,  1.0/54.0,  1.0/54.0,  1.0/54.0,
+				      1.0/54.0,  1.0/54.0,  1.0/54.0,  1.0/54.0 };
+
+CudaConstantMemory real_t const wh[15] = {2.0/9.0,
  		       		      1.0/72.0,1.0/72.0,1.0/72.0,1.0/72.0,1.0/72.0,1.0/72.0,1.0/72.0,1.0/72.0};
 
-CudaConstantMemory real_t const d3q27_ex = {-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1};
-CudaConstantMemory real_t const d3q27_ey = {-1,-1,-1, 0, 0, 0, 1, 1, 1,-1,-1,-1, 0, 0, 0, 1, 1, 1,-1,-1,-1, 0, 0, 0, 1, 1, 1};
-CudaConstantMemory real_t const d3q27_ez = {-1,-1,-1,-1,-1,-1,-1,-1,-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+CudaConstantMemory real_t const d3q27_ex[27] = {0, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 0, 0, 0, 0};
+CudaConstantMemory real_t const d3q27_ey[27] = {0, 0, 0, 1,-1, 0, 0, 1, 1,-1,-1, 1, 1,-1,-1, 1, 1,-1,-1, 0, 0, 0, 0, 1,-1, 1,-1};
+CudaConstantMemory real_t const d3q27_ez[27] = {0, 0, 0, 0, 0, 1,-1, 1, 1, 1, 1,-1,-1,-1,-1, 0, 0, 0, 0, 1, 1,-1,-1, 1, 1,-1,-1};
 
-CudaConstantMemory real_t const d3q15_ex = {0, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 1,-1, 1,-1};
-CudaConstantMemory real_t const d3q15_ey = {0, 0, 0, 1,-1, 0, 0, 1, 1,-1,-1, 1, 1,-1,-1};
-CudaConstantMemory real_t const d3q15_ez = {0, 0, 0, 0, 0, 1,-1, 1, 1, 1, 1,-1,-1,-1,-1};
-
+//CudaConstantMemory real_t const d3q15_ex = {0, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 1,-1, 1,-1};
+//CudaConstantMemory real_t const d3q15_ey = {0, 0, 0, 1,-1, 0, 0, 1, 1,-1,-1, 1, 1,-1,-1};
+//CudaConstantMemory real_t const d3q15_ez = {0, 0, 0, 0, 0, 1,-1, 1, 1, 1, 1,-1,-1,-1,-1};
 
 //	EXPORTABLE QUANTITIES:
 CudaDeviceFunction real_t getRho(){
@@ -71,33 +74,35 @@ CudaDeviceFunction real_t getP(){
 CudaDeviceFunction vector_t calcGradPhi(){
 	vector_t gradPhi = {0.0,0.0,0.0};
 	real_t phi[27];
-	phi[0]=PhaseF(-1,-1,-1);
-	phi[1]=PhaseF(0,-1,-1);
-	phi[2]=PhaseF(1,-1,-1);
-	phi[3]=PhaseF(-1,0,-1);
-	phi[4]=PhaseF(0,0,-1);
-	phi[5]=PhaseF(1,0,-1);
-	phi[6]=PhaseF(-1,1,-1);
-	phi[7]=PhaseF(0,1,-1);
-	phi[8]=PhaseF(1,1,-1);
-	phi[9]=PhaseF(-1,-1,0);
-	phi[10]=PhaseF(0,-1,0);
-	phi[11]=PhaseF(1,-1,0);
-	phi[12]=PhaseF(-1,0,0);
-	phi[13]=PhaseF(0,0,0);
-	phi[14]=PhaseF(1,0,0);
-	phi[15]=PhaseF(-1,1,0);
-	phi[16]=PhaseF(0,1,0);
-	phi[17]=PhaseF(1,1,0);
-	phi[18]=PhaseF(-1,-1,1);
-	phi[19]=PhaseF(0,-1,1);
-	phi[20]=PhaseF(1,-1,1);
-	phi[21]=PhaseF(-1,0,1);
-	phi[22]=PhaseF(0,0,1);
-	phi[23]=PhaseF(1,0,1);
-	phi[24]=PhaseF(-1,1,1);
-	phi[25]=PhaseF(0,1,1);
-	phi[26]=PhaseF(1,1,1);
+
+        phi[0]=PhaseF(0,0,0);
+        phi[1]=PhaseF(1,0,0);
+        phi[2]=PhaseF(-1,0,0);
+        phi[3]=PhaseF(0,1,0);
+        phi[4]=PhaseF(0,-1,0);
+        phi[5]=PhaseF(0,0,1);
+        phi[6]=PhaseF(0,0,-1);
+        phi[7]=PhaseF(1,1,1);
+        phi[8]=PhaseF(-1,1,1);
+        phi[9]=PhaseF(1,-1,1);
+        phi[10]=PhaseF(-1,-1,1);
+        phi[11]=PhaseF(1,1,-1);
+        phi[12]=PhaseF(-1,1,-1);
+        phi[13]=PhaseF(1,-1,-1);
+        phi[14]=PhaseF(-1,-1,-1);
+        phi[15]=PhaseF(1,1,0);
+        phi[16]=PhaseF(-1,1,0);
+        phi[17]=PhaseF(1,-1,0);
+        phi[18]=PhaseF(-1,-1,0);
+        phi[19]=PhaseF(1,0,1);
+        phi[20]=PhaseF(-1,0,1);
+        phi[21]=PhaseF(1,0,-1);
+        phi[22]=PhaseF(-1,0,-1);
+        phi[23]=PhaseF(0,1,1);
+        phi[24]=PhaseF(0,-1,1);
+        phi[25]=PhaseF(0,1,-1);
+        phi[26]=PhaseF(0,-1,-1);
+
 	for (int i=0; i<27; i++) {
 		gradPhi.x += wg[i]*d3q27_ex[i]*phi[i];
 		gradPhi.y += wg[i]*d3q27_ey[i]*phi[i];
@@ -120,57 +125,64 @@ CudaDeviceFunction real_t calcMu(real_t C){
 
 	pfavg = 0.5*(PhaseField_l+PhaseField_h);
 
-	phi[0]=PhaseF(-1,-1,-1);
-	phi[1]=PhaseF(0,-1,-1);
-	phi[2]=PhaseF(1,-1,-1);
-	phi[3]=PhaseF(-1,0,-1);
-	phi[4]=PhaseF(0,0,-1);
-	phi[5]=PhaseF(1,0,-1);
-	phi[6]=PhaseF(-1,1,-1);
-	phi[7]=PhaseF(0,1,-1);
-	phi[8]=PhaseF(1,1,-1);
-	phi[9]=PhaseF(-1,-1,0);
-	phi[10]=PhaseF(0,-1,0);
-	phi[11]=PhaseF(1,-1,0);
-	phi[12]=PhaseF(-1,0,0);
-	phi[13]=PhaseF(0,0,0);
-	phi[14]=PhaseF(1,0,0);
-	phi[15]=PhaseF(-1,1,0);
-	phi[16]=PhaseF(0,1,0);
-	phi[17]=PhaseF(1,1,0);
-	phi[18]=PhaseF(-1,-1,1);
-	phi[19]=PhaseF(0,-1,1);
-	phi[20]=PhaseF(1,-1,1);
-	phi[21]=PhaseF(-1,0,1);
-	phi[22]=PhaseF(0,0,1);
-	phi[23]=PhaseF(1,0,1);
-	phi[24]=PhaseF(-1,1,1);
-	phi[25]=PhaseF(0,1,1);
-	phi[26]=PhaseF(1,1,1);
+        phi[0]=PhaseF(0,0,0);
+        phi[1]=PhaseF(1,0,0);
+        phi[2]=PhaseF(-1,0,0);
+        phi[3]=PhaseF(0,1,0);
+        phi[4]=PhaseF(0,-1,0);
+        phi[5]=PhaseF(0,0,1);
+        phi[6]=PhaseF(0,0,-1);
+        phi[7]=PhaseF(1,1,1);
+        phi[8]=PhaseF(-1,1,1);
+        phi[9]=PhaseF(1,-1,1);
+        phi[10]=PhaseF(-1,-1,1);
+        phi[11]=PhaseF(1,1,-1);
+        phi[12]=PhaseF(-1,1,-1);
+        phi[13]=PhaseF(1,-1,-1);
+        phi[14]=PhaseF(-1,-1,-1);
+        phi[15]=PhaseF(1,1,0);
+        phi[16]=PhaseF(-1,1,0);
+        phi[17]=PhaseF(1,-1,0);
+        phi[18]=PhaseF(-1,-1,0);
+        phi[19]=PhaseF(1,0,1);
+        phi[20]=PhaseF(-1,0,1);
+        phi[21]=PhaseF(1,0,-1);
+        phi[22]=PhaseF(-1,0,-1);
+        phi[23]=PhaseF(0,1,1);
+        phi[24]=PhaseF(0,-1,1);
+        phi[25]=PhaseF(0,1,-1);
+        phi[26]=PhaseF(0,-1,-1);
 
-	lpPhi = (2.0/81.0) * (2.0*(phi[4] + phi[10] + phi[12] + phi[14] + phi[16] + phi[22] )
-		 + ( phi[1] + phi[3] + phi[5] + phi[7] + phi[9] + phi[11] + phi[15] + phi[17] + phi[19] + phi[21]
-                 + phi[23] + phi[25])/2.0
-                 + ( phi[0] + phi[2] + phi[6] + phi[8] + phi[18] + phi[20] + phi[24] + phi[26] )/8.0
+	lpPhi = (2.0/81.0) * (2.0*(phi[1] + phi[2] + phi[3] + phi[4] + phi[5] + phi[6] )
+		 + ( phi[15] + phi[16] + phi[17] + phi[18] + phi[19] + phi[20] + phi[21] + phi[22] + phi[23] + phi[24]
+                 + phi[25] + phi[26])/2.0
+                 + ( phi[7] + phi[8] + phi[9] + phi[10] + phi[11] + phi[12] + phi[13] + phi[14] )/8.0
 		 - 19.0 * C) ;
 
-	mu = 4.0*(12.0*sigma/W)*(C-PhaseField_l)*(C-PhaseField_h)*(C-pfavg)
-	       - (1.5 *sigma*W) * lpPhi;
+	mu = 4.0*(12.0*sigma/Width)*(C-PhaseField_l)*(C-PhaseField_h)*(C-pfavg)
+	       - (1.5 *sigma*Width) * lpPhi;
 
 	return mu;
 }
 
-CudaDeviceFunction real_t calcGamma(int i, real_t u, real_t v, real_t w, real_t u2mag){
+CudaDeviceFunction real_t calcGamma_g(int i, real_t u, real_t v, real_t w, real_t u2mag){
 	real_t gamma, tmp;
 	tmp = (d3q27_ex[i]*u+d3q27_ey[i]*v+d3q27_ez[i]*w);
 
 	gamma = wg[i] * (1 + 3.0*(tmp) + 4.5*(tmp*tmp) - 1.5*(u2mag)) ;
 	return gamma;
 }
+CudaDeviceFunction real_t calcGamma_h(int i, real_t u, real_t v, real_t w, real_t u2mag){
+	real_t gamma, tmp;
+	tmp = (d3q27_ex[i]*u+d3q27_ey[i]*v+d3q27_ez[i]*w);
+
+	gamma = wh[i] * (1 + 3.0*(tmp) + 4.5*(tmp*tmp) - 1.5*(u2mag)) ;
+	return gamma;
+}
 CudaDeviceFunction real_t calcF_phi(int i, real_t tmp1, real_t nx, real_t ny, real_t nz){
 	real_t f_phi;
 
-	f_phi = wf[i] * tmp1 * (d3q27_ex[i]*nx + d3q27_ey[i]*ny + d3q27_ez[i]*nz);
+	f_phi = wh[i] * tmp1 * (d3q27_ex[i]*nx + d3q27_ey[i]*ny + d3q27_ez[i]*nz);
 	return f_phi;
 }
 
@@ -182,31 +194,34 @@ CudaDeviceFunction void Init() {
 CudaDeviceFunction void Init_distributions(){
 // Find Gradients and normals:
 	int i;
-	real_t C = PhaseF(0,0);
+	real_t C = PhaseF(0,0,0);
 	vector_t gradPhi = calcGradPhi();
 	real_t nx, ny, nz, magnPhi;
 	magnPhi = sqrt(gradPhi.x*gradPhi.x + gradPhi.y*gradPhi.y + gradPhi.z*gradPhi.z + 1e-12);
 	nx = gradPhi.x/magnPhi;
 	ny = gradPhi.y/magnPhi;
+	nz = gradPhi.z/magnPhi;
 // Define Equilibrium, then initialise all da things
 	U = VelocityX;
 	V = VelocityY;
 	W = VelocityZ;
-	real_t mag = U*U + V*V + Z*Z;
+	real_t mag = U*U + V*V + W*W;
 
 	real_t Gamma[27];
 // ##### heq
-	real_t F_phi[27], tmp1;
-	tmp1 = (1.0 - 4.0*(C - 0.5)*(C - 0.5))/W;
+	real_t F_phi[15], tmp1;
+	tmp1 = (1.0 - 4.0*(C - 0.5)*(C - 0.5))/Width;
 
 	for (i=0; i< 15; i++){
-		Gamma[i] = calcGamma(i, U, V, mag);
-		F_phi[i] = calcF_phi(i, tmp1, nx, ny);
+		Gamma[i] = calcGamma_h(i, U, V, W, mag);
+		F_phi[i] = calcF_phi(i, tmp1, nx, ny, nz);
 		h[i] = C * Gamma[i] - 0.5*F_phi[i];
-// ##### geq
-		g[i] = Gamma[i] - wf[i];
 	}
-	PhaseF = h[0]+h[1]+h[2]+h[3]+h[4]+h[5]+h[6]+h[7]+h[8];
+// ##### geq
+	for (i=0; i<27; i++){
+		Gamma[i] = calcGamma_g(i, U, V, W, mag);
+		g[i] = Gamma[i] - wg[i];
+	}
 }
 
 //	ITERATION:
@@ -219,25 +234,25 @@ CudaDeviceFunction void Run() {
     }
     if (NodeType & NODE_MRT)
     {
-		CollisionMRT();
+		//CollisionMRT();
 		//CollisionMRT_SRTstress();
     } else if (NodeType & NODE_BGK) {
 		CollisionBGK();
 	}
 }
-
+/*
 CudaDeviceFunction void CollisionMRT(){
 	int i;
-	real_t C = PhaseF(0,0), mu;
+	real_t C = PhaseF(0,0,0), mu;
 	real_t tau, DynVisc, rho, p;			// Macroscopic Properties
 	vector_t gradPhi;				// Phase field gradients
 	real_t nx, ny;					// Normals
-	real_t Gamma[9], geq[9], mag;	// equilibrium, pressure equilibrium, velocity magnitude
-	real_t F_pressure[2], F_body[2], F_mu[2], F_total[2]; // Forces
+	real_t Gamma[27], geq[27], mag;	// equilibrium, pressure equilibrium, velocity magnitude
+	real_t F_pressure[3], F_body[3], F_mu[3], F_total[3]; // Forces
 	real_t stress[3];			// Stress tensor calculation
-	real_t F_phi[9], heq[9], tmp1;	// Phase field collision terms
-	real_t F_i[9];					// Momentum distribution forcing term
-	real_t R[9], S[9];				// Populations for MRT relaxation
+	real_t F_phi[15], heq[15], tmp1;	// Phase field collision terms
+	real_t F_i[27];					// Momentum distribution forcing term
+	real_t R[27], S[27];				// Populations for MRT relaxation
 // Find Macroscopic Details
 //		Fluid Properties:
 	mu = calcMu( C );
@@ -292,7 +307,7 @@ CudaDeviceFunction void CollisionMRT(){
 	S[4] *= S4;
 	S[5] *= S5;
 	S[6] *= S6;*/ // CURRENT DEFAULT - S0-S6=1.0
-	S[7] *= 1.0/(tau);
+/*here	S[7] *= 1.0/(tau);
 	S[8] *= 1.0/(tau);
 	//	Transform to back to shifted-Pressure space:
 	R[0] = ( S[2] - S[1] + S[0] )/9.;
@@ -353,7 +368,7 @@ CudaDeviceFunction void CollisionMRT(){
 	S[4] *= S4;
 	S[5] *= S5;
 	S[6] *= S6;*/ // CURRENT DEFAULT - S0-S6=1.0
-	S[7] *= 1.0/(tau);
+/*here	S[7] *= 1.0/(tau);
 	S[8] *= 1.0/(tau);
 	//	Transform to back to shifted-Pressure space:
 	R[0] = ( S[2] - S[1] + S[0] )/9.;
@@ -415,7 +430,7 @@ CudaDeviceFunction void CollisionMRT(){
 	S[4] *= S4;
 	S[5] *= S5;
 	S[6] *= S6;*/ // CURRENT DEFAULT - S0-S6=1.0
-	S[7] *= 1.0/(tau);
+/*here	S[7] *= 1.0/(tau);
 	S[8] *= 1.0/(tau);
 	//	Transform to back to shifted-Pressure space:
 	R[0] = ( S[2] - S[1] + S[0] )/9.;
@@ -466,7 +481,7 @@ int i;
 // 		Gradients & Normals
 	gradPhi = calcGradPhi();
 	nx = gradPhi.x/gradPhi.z;	//as in 2D, gradPhi.z is storing the magnitude of the vector
-	ny = gradPhi.y/gradPhi.z; 
+	ny = gradPhi.y/gradPhi.z;
 
 // 		MRT stuff
 	mag = U*U + V*V;
@@ -577,20 +592,20 @@ int i;
 
 CudaDeviceFunction void CollisionBGK(){
 	int i;
-	real_t C = PhaseF(0,0), mu;
+	real_t C = PhaseF(0,0,0), mu;
 	real_t tau, DynVisc, rho, p;			// Macroscopic Properties
 	vector_t gradPhi;				// Phase field gradients
-	real_t nx, ny;					// Normals
-	real_t Gamma[9], geq[9], mag;			// equilibrium, pressure equilibrium, velocity magnitude
-	real_t F_pressure[2], F_body[2], F_mu[2], F_total[2]; // Forces
-	real_t tmp1, stress[3];				// Stress tensor calculation
-	real_t F_phi[9], heq[9];			// Phase field collision terms
-	real_t F_i[9];					// Momentum distribution forcing term
+	real_t nx, ny, nz, magnPhi;			// Normals
+	real_t Gamma[27], geq[27], mag;			// equilibrium, pressure equilibrium, velocity magnitude
+	real_t F_pressure[3], F_body[3], F_mu[3], F_total[3]; // Forces
+	real_t tmp1, stress[6]={0.0,0.0,0.0,0.0,0.0,0.0};     // Stress tensor calculation
+	real_t F_phi[15], heq[15];			// Phase field collision terms
+	real_t F_i[27];					// Momentum distribution forcing term
 
 // Find Macroscopic Details
 	mu = calcMu( C );
 	rho = Density_l + (C - PhaseField_l)*(Density_h - Density_l);
-	p = g[0]+g[1]+g[2]+g[3]+g[4]+g[5]+g[6]+g[7]+g[8];
+	p = <?R C(sum(g)) ?>;
 
 // Updating of tau:
 //    Updating via the kinematic viscosity here gives more stable solutions
@@ -615,72 +630,86 @@ CudaDeviceFunction void CollisionBGK(){
 
 	// GRADIENTS AND NORMALS
 	gradPhi = calcGradPhi();
+	magnPhi = sqrt(gradPhi.x*gradPhi.x + gradPhi.y*gradPhi.y + gradPhi.z*gradPhi.z + 1e-12);
 // As in 2D, gradPhi.z is storing the magnitude of the vector
-	nx = gradPhi.x/gradPhi.z;
-	ny = gradPhi.y/gradPhi.z;
+	nx = gradPhi.x/magnPhi;
+	ny = gradPhi.y/magnPhi;
+	nz = gradPhi.z/magnPhi;
 
 	// GAMMA AND EQUILIBRIUM
-	mag = U*U + V*V;
-	for (i=0; i< 9; i++){
-		Gamma[i] = calcGamma(i, U, V, mag);
-		geq[i] = wf[i]*p + Gamma[i] - wf[i];
+	mag = U*U + V*V + W*W;
+	for (i=0; i< 27; i++){
+		Gamma[i] = calcGamma_g(i, U, V, W, mag);
+		geq[i] = wg[i]*p + Gamma[i] - wg[i];
 	}
 
 	// CALCULATE FORCES:
 	F_pressure[0] = (-1.0/3.0) * p * (Density_h-Density_l) * gradPhi.x;
 	F_pressure[1] = (-1.0/3.0) * p * (Density_h-Density_l) * gradPhi.y;
+	F_pressure[2] = (-1.0/3.0) * p * (Density_h-Density_l) * gradPhi.z;
 	F_body[0] = (rho-Density_h)*BuoyancyX + rho*GravitationX;
 	F_body[1] = (rho-Density_h)*BuoyancyY + rho*GravitationY;
+	F_body[2] = (rho-Density_h)*BuoyancyZ + rho*GravitationZ;
 		// Stress/strain Tensor
-	stress[0] = 0.0;
-	stress[1] = 0.0;
-	stress[2] = 0.0;
-	for (i=0; i< 9; i++){
+	for (i=0; i< 27; i++){
 		tmp1 = g[i] - geq[i];
-		stress[0] += tmp1*d2q9_ex[i]*d2q9_ex[i];
-		stress[1] += tmp1*d2q9_ex[i]*d2q9_ey[i];
-		stress[2] += tmp1*d2q9_ey[i]*d2q9_ey[i];    }
+		stress[0] += tmp1*d3q27_ex[i]*d3q27_ex[i];
+		stress[1] += tmp1*d3q27_ex[i]*d3q27_ey[i];
+		stress[2] += tmp1*d3q27_ex[i]*d3q27_ez[i];
+		stress[3] += tmp1*d3q27_ey[i]*d3q27_ey[i];
+		stress[4] += tmp1*d3q27_ey[i]*d3q27_ez[i];
+		stress[5] += tmp1*d3q27_ez[i]*d3q27_ez[i];
+	}
 
-	F_mu[0] = (0.5-tau)/tau * (stress[0]*gradPhi.x + stress[1]*gradPhi.y) * (Density_h-Density_l);
-	F_mu[1] = (0.5-tau)/tau * (stress[1]*gradPhi.x + stress[2]*gradPhi.y) * (Density_h-Density_l);
+	F_mu[0] = (0.5-tau)/tau * (Density_h-Density_l) * (stress[0]*gradPhi.x + stress[1]*gradPhi.y + stress[2]*gradPhi.z);
+	F_mu[1] = (0.5-tau)/tau * (Density_h-Density_l) * (stress[1]*gradPhi.x + stress[3]*gradPhi.y + stress[4]*gradPhi.z);
+	F_mu[2] = (0.5-tau)/tau * (Density_h-Density_l) * (stress[2]*gradPhi.x + stress[4]*gradPhi.y + stress[5]*gradPhi.z);
 	F_total[0] = mu*gradPhi.x + F_pressure[0] + F_body[0] + F_mu[0];
 	F_total[1] = mu*gradPhi.y + F_pressure[1] + F_body[1] + F_mu[1];
-	U = g[1]-g[3]+g[5]-g[6]-g[7]+g[8] + 0.5*F_total[0]/rho;
-	V = g[2]-g[4]+g[5]+g[6]-g[7]-g[8] + 0.5*F_total[1]/rho;
+	F_total[2] = mu*gradPhi.z + F_pressure[2] + F_body[2] + F_mu[2];
+
+	<?R C( u, g %*% U) ?>
+	U = (U + 0.5*F_total[0])/rho;
+	V = (V + 0.5*F_total[1])/rho;
+	W = (W + 0.5*F_total[2])/rho;
 
 // RECALCULATE GAMMA
-	mag = U*U + V*V;
-	for (i=0; i< 9; i++){
-		Gamma[i] = calcGamma(i, U, V, mag);
-		geq[i] = wf[i]*p + Gamma[i] - wf[i];
+	mag = U*U + V*V + W*W;
+	for (i=0; i< 27; i++){
+		Gamma[i] = calcGamma_g(i, U, V, W, mag);
+		geq[i] = wg[i]*p + Gamma[i] - wg[i];
 	}
-	stress[0] = 0.0;
-	stress[1] = 0.0;
-	stress[2] = 0.0;
-	for (i=0;i< 9; i++){
+	for (i=0;i<6;i++) {
+		stress[i] = 0.0;
+	}
+	for (i=0; i< 27; i++){
 		tmp1 = g[i] - geq[i];
-		stress[0] += tmp1*d2q9_ex[i]*d2q9_ex[i];
-		stress[1] += tmp1*d2q9_ex[i]*d2q9_ey[i];
-		stress[2] += tmp1*d2q9_ey[i]*d2q9_ey[i];
+		stress[0] += tmp1*d3q27_ex[i]*d3q27_ex[i];
+		stress[1] += tmp1*d3q27_ex[i]*d3q27_ey[i];
+		stress[2] += tmp1*d3q27_ex[i]*d3q27_ez[i];
+		stress[3] += tmp1*d3q27_ey[i]*d3q27_ey[i];
+		stress[4] += tmp1*d3q27_ey[i]*d3q27_ez[i];
+		stress[5] += tmp1*d3q27_ez[i]*d3q27_ez[i];
 	}
 
-	F_mu[0] = (0.5-tau)/tau * (stress[0]*gradPhi.x + stress[1]*gradPhi.y) * (Density_h-Density_l);
-	F_mu[1] = (0.5-tau)/tau * (stress[1]*gradPhi.x + stress[2]*gradPhi.y) * (Density_h-Density_l);
-
+	F_mu[0] = (0.5-tau)/tau * (Density_h-Density_l) * (stress[0]*gradPhi.x + stress[1]*gradPhi.y + stress[2]*gradPhi.z);
+	F_mu[1] = (0.5-tau)/tau * (Density_h-Density_l) * (stress[1]*gradPhi.x + stress[3]*gradPhi.y + stress[4]*gradPhi.z);
+	F_mu[2] = (0.5-tau)/tau * (Density_h-Density_l) * (stress[2]*gradPhi.x + stress[4]*gradPhi.y + stress[5]*gradPhi.z);
 	F_total[0] = mu*gradPhi.x + F_pressure[0] + F_body[0] + F_mu[0];
 	F_total[1] = mu*gradPhi.y + F_pressure[1] + F_body[1] + F_mu[1];
-
+	F_total[2] = mu*gradPhi.z + F_pressure[2] + F_body[2] + F_mu[2];
 
 // PHASE FIELD POPULATION UPDATE:
-	tmp1 = (1.0 - 4.0*(C - 0.5)*(C - 0.5))/W;
-	for (i=0; i< 9; i++){
-		F_phi[i] = calcF_phi(i, tmp1, nx, ny); // Forcing Terms
-		heq[i] = C * Gamma[i] - 0.5*F_phi[i];  // heq
+	tmp1 = (1.0 - 4.0*(C - 0.5)*(C - 0.5))/Width;
+	real_t fix[15] = {0.75, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5,3.,3.,3.,3.,3.,3.,3.,3.};
+	for (i=0; i< 15; i++){
+		F_phi[i] = calcF_phi(i, tmp1, nx, ny, nz); 		// Forcing Terms
+		heq[i] = C * fix[i]*Gamma[i] - 0.5*F_phi[i];      	// heq
 		h[i] = h[i] - omega_phi * (h[i]-heq[i]) + F_phi[i];	// collision
 	}
 // PRESSURE EVOLUTION UPDATE:
-	for (i=0; i< 9; i++) {
-		F_i[i] = 3.0*wf[i] * (F_total[0]*d2q9_ex[i] + F_total[1]*d2q9_ey[i])/rho;
+	for (i=0; i< 27; i++) {
+		F_i[i] = 3.0*wg[i] * (F_total[0]*d3q27_ex[i] + F_total[1]*d3q27_ey[i] + F_total[2]*d3q27_ey[i])/rho;
 
 		g[i] = g[i]-(g[i]-(geq[i]-0.5*F_i[i]))/tau+F_i[i]; // Collision
 	}
@@ -690,34 +719,49 @@ CudaDeviceFunction void CollisionBGK(){
 CudaDeviceFunction void BounceBack()
 {
 	real_t tmp;
-	tmp = g[1];
-	g[1] = g[3];
-	g[3] = tmp;
-	tmp = g[2];
-	g[2] = g[4];
-	g[4] = tmp;
-	tmp = g[5];
-	g[5] = g[7];
-	g[7] = tmp;
-	tmp = g[6];
-	g[6] = g[8];
-	g[8] = tmp;
+        tmp = g[1]; g[1] = g[2];
+        tmp = g[2]; g[2] = g[1];
+        tmp = g[3]; g[3] = g[4];
+        tmp = g[4]; g[4] = g[3];
+        tmp = g[5]; g[5] = g[6];
+        tmp = g[6]; g[6] = g[5];
+        tmp = g[7]; g[7] = g[14];
+        tmp = g[8]; g[8] = g[13];
+        tmp = g[9]; g[9] = g[12];
+        tmp = g[10]; g[10] = g[11];
+        tmp = g[11]; g[11] = g[10];
+        tmp = g[12]; g[12] = g[9];
+        tmp = g[13]; g[13] = g[8];
+        tmp = g[14]; g[14] = g[7];
+        tmp = g[15]; g[15] = g[18];
+        tmp = g[16]; g[16] = g[17];
+        tmp = g[17]; g[17] = g[16];
+        tmp = g[18]; g[18] = g[15];
+        tmp = g[19]; g[19] = g[22];
+        tmp = g[20]; g[20] = g[21];
+        tmp = g[21]; g[21] = g[20];
+        tmp = g[22]; g[22] = g[19];
+        tmp = g[23]; g[23] = g[26];
+        tmp = g[24]; g[24] = g[25];
+        tmp = g[25]; g[25] = g[24];
+        tmp = g[26]; g[26] = g[23];
 
-	tmp = h[1];
-	h[1] = h[3];
-	h[3] = tmp;
-	tmp = h[2];
-	h[2] = h[4];
-	h[4] = tmp;
-	tmp = h[5];
-	h[5] = h[7];
-	h[7] = tmp;
-	tmp = h[6];
-	h[6] = h[8];
-	h[8] = tmp;
+        tmp = h[1]; h[1] = h[2];
+        tmp = h[2]; h[2] = h[1];
+        tmp = h[3]; h[3] = h[4];
+        tmp = h[4]; h[4] = h[3];
+        tmp = h[5]; h[5] = h[6];
+        tmp = h[6]; h[6] = h[5];
+        tmp = h[7]; h[7] = h[14];
+        tmp = h[8]; h[8] = h[13];
+        tmp = h[9]; h[9] = h[12];
+        tmp = h[10]; h[10] = h[11];
+        tmp = h[11]; h[11] = h[10];
+        tmp = h[12]; h[12] = h[9];
+        tmp = h[13]; h[13] = h[8];
+        tmp = h[14]; h[14] = h[7];
 }
 
-//	MISCELLANIOUS FUNCTIONS:
 CudaDeviceFunction vector_t getA(){
 	vector_t ret;
 	return ret;

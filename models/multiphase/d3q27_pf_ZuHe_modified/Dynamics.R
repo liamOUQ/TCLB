@@ -3,17 +3,33 @@
 #  dx,dy,dz - direction of streaming
 #  comment - additional comment
 #	Velocity-based Evolution d3q27:
-U = expand.grid(-1:1,-1:1,-1:1)
-AddDensity(
-	name=paste("g",1:27-1,sep=""),
-	dx=U[,1],
-	dy=U[,2],
-	dz=U[,3],
-	comment=paste("Velocity Evolution",1:27-1),
-	group="g" )
-
-AddDensity(name="U", dx=0, dy=0, dz=0, group="h")
-AddDensity(name="V", dx=0, dy=0, dz=0, group="h")
+AddDensity( name="g[0]", dx= 0, dy= 0, dz= 0, group="g")
+AddDensity( name="g[1]", dx= 1, dy= 0, dz= 0, group="g")
+AddDensity( name="g[2]", dx=-1, dy= 0, dz= 0, group="g")
+AddDensity( name="g[3]", dx= 0, dy= 1, dz= 0, group="g")
+AddDensity( name="g[4]", dx= 0, dy=-1, dz= 0, group="g")
+AddDensity( name="g[5]", dx= 0, dy= 0, dz= 1, group="g")
+AddDensity( name="g[6]", dx= 0, dy= 0, dz=-1, group="g")
+AddDensity( name="g[7]", dx= 1, dy= 1, dz= 1, group="g")
+AddDensity( name="g[8]", dx=-1, dy= 1, dz= 1, group="g")
+AddDensity( name="g[9]", dx= 1, dy=-1, dz= 1, group="g")
+AddDensity( name="g[10]",dx=-1, dy=-1, dz= 1, group="g")
+AddDensity( name="g[11]",dx= 1, dy= 1, dz=-1, group="g")
+AddDensity( name="g[12]",dx=-1, dy= 1, dz=-1, group="g")
+AddDensity( name="g[13]",dx= 1, dy=-1, dz=-1, group="g")
+AddDensity( name="g[14]",dx=-1, dy=-1, dz=-1, group="g")
+AddDensity( name="g[15]",dx= 1, dy= 1, dz= 0, group="g")
+AddDensity( name="g[16]",dx=-1, dy= 1, dz= 0, group="g")
+AddDensity( name="g[17]",dx= 1, dy=-1, dz= 0, group="g")
+AddDensity( name="g[18]",dx=-1, dy=-1, dz= 0, group="g")
+AddDensity( name="g[19]",dx= 1, dy= 0, dz= 1, group="g")
+AddDensity( name="g[20]",dx=-1, dy= 0, dz= 1, group="g")
+AddDensity( name="g[21]",dx= 1, dy= 0, dz=-1, group="g")
+AddDensity( name="g[22]",dx=-1, dy= 0, dz=-1, group="g")
+AddDensity( name="g[23]",dx= 0, dy= 1, dz= 1, group="g")
+AddDensity( name="g[24]",dx= 0, dy=-1, dz= 1, group="g")
+AddDensity( name="g[25]",dx= 0, dy= 1, dz=-1, group="g")
+AddDensity( name="g[26]",dx= 0, dy=-1, dz=-1, group="g")
 
 #	Phase Field Evolution d3q15:
 AddDensity( name="h[0]", dx= 0, dy= 0, dz= 0, group="h")
@@ -32,6 +48,10 @@ AddDensity( name="h[12]",dx=-1, dy= 1, dz=-1, group="h")
 AddDensity( name="h[13]",dx= 1, dy=-1, dz=-1, group="h")
 AddDensity( name="h[14]",dx=-1, dy=-1, dz=-1, group="h")
 
+AddDensity(name="U", dx=0, dy=0, dz=0, group="h")
+AddDensity(name="V", dx=0, dy=0, dz=0, group="h")
+AddDensity(name="W", dx=0, dy=0, dz=0, group="h")
+
 AddField('PhaseF',stencil3d=1, group="OrderParameter")
 
 # Stages - processes to run for initialisation and each iteration
@@ -43,7 +63,7 @@ AddStage("BaseIter"     , "Run" , save=Fields$group=="g" | Fields$group=="h" ,
 	load=DensityAll$group=="g" | DensityAll$group=="h")
 
 AddAction("Iteration", c("BaseIter", "calcPhase"))
-AddAction("Init"     , c("PhaseInit", "BaseInit"))
+AddAction("Init"     , c("PhaseInit", "BaseInit", "calcPhase"))
 
 # 	Outputs:
 AddQuantity(name="Rho",	  unit="kg/m3")
@@ -57,7 +77,7 @@ AddSetting(name="Density_l", comment='Low  density')
 AddSetting(name="PhaseField_h", default=1, comment='PhaseField in Liquid')
 AddSetting(name="PhaseField_l", default=0, comment='PhaseField gas')
 AddSetting(name="PhaseField", 	   comment='Initial PhaseField distribution', zonal=T)
-AddSetting(name="W", default=4,    comment='Anti-diffusivity coeff')
+AddSetting(name="Width", default=4,    comment='Anti-diffusivity coeff')
 AddSetting(name="omega_phi", comment='one over relaxation time (phase field)')
 AddSetting(name="M", omega_phi='1.0/(3*M+0.5)', default=0.02, comment='Mobility')
 AddSetting(name="sigma", 		   comment='surface tension')
