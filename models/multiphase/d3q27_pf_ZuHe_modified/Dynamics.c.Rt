@@ -73,6 +73,7 @@ CudaDeviceFunction vector_t calcGradPhi(){
 CudaDeviceFunction void calcPhaseF(){
 	PhaseF = h0+h1+h2+h3+h4+h5+h6+h7+h8+
 		 h9+h10+h11+h12+h13+h14;
+	if ( NodeType & NODE_Wall ) PhaseF = PhaseField;
 }
 
 CudaDeviceFunction real_t calcMu(real_t C){
@@ -422,49 +423,29 @@ CudaDeviceFunction void CollisionBGK(){
 CudaDeviceFunction void BounceBack()
 {
 	real_t tmp;
-        tmp = g0; g0 = g0;
-        tmp = g1; g1 = g2;
-        tmp = g2; g2 = g1;
-        tmp = g3; g3 = g4;
-        tmp = g4; g4 = g3;
-        tmp = g5; g5 = g6;
-        tmp = g6; g6 = g5;
-        tmp = g7; g7 = g14;
-        tmp = g8; g8 = g13;
-        tmp = g9; g9 = g12;
-        tmp = g10; g10 = g11;
-        tmp = g11; g11 = g10;
-        tmp = g12; g12 = g9;
-        tmp = g13; g13 = g8;
-        tmp = g14; g14 = g7;
-        tmp = g15; g15 = g18;
-        tmp = g16; g16 = g17;
-        tmp = g17; g17 = g16;
-        tmp = g18; g18 = g15;
-        tmp = g19; g19 = g22;
-        tmp = g20; g20 = g21;
-        tmp = g21; g21 = g20;
-        tmp = g22; g22 = g19;
-        tmp = g23; g23 = g26;
-        tmp = g24; g24 = g25;
-        tmp = g25; g25 = g24;
-        tmp = g26; g26 = g23;
+        tmp = g0; g0 = g0; g0 = tmp;
+        tmp = g1; g1 = g2; g2 = tmp;
+        tmp = g3; g3 = g4; g4 = tmp;
+        tmp = g5; g5 = g6; g6 = tmp;
+        tmp = g7; g7 = g14; g14 = tmp;
+        tmp = g8; g8 = g13; g13 = tmp;
+        tmp = g9; g9 = g12; g12 = tmp;
+        tmp = g10; g10 = g11; g11 = tmp;
+        tmp = g15; g15 = g18; g18 = tmp;
+        tmp = g16; g16 = g17; g17 = tmp;
+        tmp = g19; g19 = g22; g22 = tmp;
+        tmp = g20; g20 = g21; g21 = tmp;
+        tmp = g23; g23 = g26; g26 = tmp;
+        tmp = g24; g24 = g25; g25 = tmp;
 
-        tmp = h0; h0 = h0;
-        tmp = h1; h1 = h2;
-        tmp = h2; h2 = h1;
-        tmp = h3; h3 = h4;
-        tmp = h4; h4 = h3;
-        tmp = h5; h5 = h6;
-        tmp = h6; h6 = h5;
-        tmp = h7; h7 = h14;
-        tmp = h8; h8 = h13;
-        tmp = h9; h9 = h12;
-        tmp = h10; h10 = h11;
-        tmp = h11; h11 = h10;
-        tmp = h12; h12 = h9;
-        tmp = h13; h13 = h8;
-        tmp = h14; h14 = h7;
+        tmp = h0; h0 = h0; h0 = tmp;
+        tmp = h1; h1 = h2; h2 = tmp;
+        tmp = h3; h3 = h4; h4 = tmp;
+        tmp = h5; h5 = h6; h6 = tmp;
+        tmp = h7; h7 = h14; h14 = tmp;
+        tmp = h8; h8 = h13; h13 = tmp;
+        tmp = h9; h9 = h12; h12 = tmp;
+        tmp = h10; h10 = h11; h11 = tmp;
 }
 
 CudaDeviceFunction vector_t getA(){
