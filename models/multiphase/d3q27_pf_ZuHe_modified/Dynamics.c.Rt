@@ -851,6 +851,16 @@ CudaDeviceFunction void CollisionMRT(){
         g24 = g24 - (geq[24]) + F_i[24];
         g25 = g25 - (geq[25]) + F_i[25];
         g26 = g26 - (geq[26]) + F_i[26];
+
+	switch (NodeType & NODE_ADDITIONALS) {
+		case NODE_Centerline:
+			if (C < 0.5 && PhaseF(1,0,0) > 0.5)
+			{
+				real_t location;
+				location = X + (C-0.5)/(C-PhaseF(1,0,0));
+				AddToInterfacePosition(location);
+			}
+	}
 }
 //	BOUNDARY CONDITIONS:
 CudaDeviceFunction void BounceBack()

@@ -104,8 +104,14 @@ AddSetting(name="GravitationZ", default=0.0, comment='applied (rho)*GravitationZ
 AddSetting(name="BuoyancyX", default=0.0, comment='applied (rho-rho_h)*BuoyancyX')
 AddSetting(name="BuoyancyY", default=0.0, comment='applied (rho-rho_h)*BuoyancyY')
 AddSetting(name="BuoyancyZ", default=0.0, comment='applied (rho-rho_h)*BuoyancyZ')
+# Velocity Tracking on Centerline:
+AddNodeType("Centerline",group="ADDITIONALS")
+AddGlobal("InterfacePosition",comment='trackPosition')
+
 # Globals - table of global integrals that can be monitored and optimized
 AddGlobal(name="PressureLoss", comment='pressure loss', unit="1mPa")
 AddGlobal(name="OutletFlux", comment='pressure loss', unit="1m2/s")
 AddGlobal(name="InletFlux", comment='pressure loss', unit="1m2/s")
 AddGlobal(name="TotalDensity", comment='Mass conservation check', unit="1kg/m3")
+
+
